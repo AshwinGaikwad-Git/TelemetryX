@@ -1,0 +1,31 @@
+[project]
+name = "telemetryx-backend"
+version = "0.1.0"
+description = "TelemetryX API and background worker foundation"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic>=1.14,<2.0", "dramatiq[redis]>=1.17,<2.0", "fastapi[standard]>=0.115,<1.0",
+  "psycopg[binary]>=3.2,<4.0", "pydantic-settings>=2.6,<3.0", "python-json-logger>=3.2,<4.0",
+  "redis>=5.2,<6.0", "sqlalchemy>=2.0,<3.0",
+]
+
+[dependency-groups]
+dev = ["httpx>=0.28,<1.0", "mypy>=1.13,<2.0", "pytest>=8.3,<9.0", "pytest-cov>=6.0,<7.0", "ruff>=0.8,<1.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["app"]
+exclude = ["alembic"]
