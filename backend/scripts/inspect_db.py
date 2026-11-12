@@ -18,10 +18,10 @@ def show_summary():
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")
     tables = [row[0] for row in cur.fetchall()]
 
-    print(f"\n=======================================================")
-    print(f"  TelemetryX Database Inspector (SQLite)")
+    print("\n=======================================================")
+    print("  TelemetryX Database Inspector (SQLite)")
     print(f"  File: {DB_PATH}")
-    print(f"=======================================================\n")
+    print("=======================================================\n")
     print(f"{'Table Name':<32} | {'Row Count':>10}")
     print("-" * 47)
 

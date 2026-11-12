@@ -11,19 +11,8 @@ logger = logging.getLogger(__name__)
 db_url = get_settings().database_url
 connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}
 
-try:
-    engine = create_engine(db_url, pool_pre_ping=True, connect_args=connect_args)
-    # Test connection if not sqlite
-    if not db_url.startswith("sqlite"):
-        with engine.connect():
-            pass
-except Exception as ex:
-    logger.warning("Configured database unavailable (%s). Falling back to local SQLite.", ex)
-    db_url = "sqlite:///telemetryx_dev.db"
-    engine = create_engine(db_url, connect_args={"check_same_thread": False})
-    from app.db.base import Base
-
-    Base.metadata.create_all(bind=engine)
+engine = create_engine(db_url, pool_pre_ping=True, connect_args=connect_args)
+# Schema changes are applied with Alembic, including on SQLite. Never silently switch stores.
 
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 

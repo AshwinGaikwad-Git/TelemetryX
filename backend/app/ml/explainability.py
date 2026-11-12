@@ -17,16 +17,17 @@ class PredictionExplainer:
         self.point_model = point_model
         self.feature_names = feature_names
 
-        # Use background sample if provided, otherwise standard TreeExplainer
+        self.explainer: Any = None
+        self.method = "shap_tree"
         try:
-            if background_data is not None and len(background_data) > 0:
-                bg = background_data[: min(50, len(background_data))]
-                self.explainer = shap.Explainer(self.point_model.predict, bg)
-            else:
-                self.explainer = shap.TreeExplainer(self.point_model)
+            self.explainer = shap.TreeExplainer(self.point_model)
         except Exception:
-            # Fallback to general explainer
-            self.explainer = shap.Explainer(self.point_model)
+            if background_data is not None and len(background_data) > 0:
+                try:
+                    self.explainer = shap.Explainer(self.point_model.predict, background_data[:50])
+                    self.method = "shap_model_agnostic"
+                except Exception:
+                    pass
 
     def explain_instance(
         self,
@@ -40,7 +41,10 @@ class PredictionExplainer:
         """
         x_2d = np.asarray(features, dtype=float).reshape(1, -1)
 
+        method = self.method
         try:
+            if self.explainer is None:
+                raise ValueError("SHAP explainer unavailable")
             shap_values = self.explainer(x_2d)
             if hasattr(shap_values, "values"):
                 vals = np.asarray(shap_values.values[0], dtype=float)
@@ -53,7 +57,8 @@ class PredictionExplainer:
                 vals = np.asarray(shap_values[0], dtype=float)
                 base_val = 0.0
         except Exception:
-            # Safe numerical perturbation fallback if TreeExplainer structure fails
+            method = "local_perturbation"
+            # Local sensitivity is not an additive SHAP decomposition.
             pred_base = float(self.point_model.predict(x_2d)[0])
             base_val = pred_base
             vals = np.zeros(len(self.feature_names))
@@ -114,9 +119,14 @@ class PredictionExplainer:
             summary_parts.append("Prediction aligns with nominal operational baseline telemetry.")
 
         summary = " ".join(summary_parts)
+        if method == "local_perturbation":
+            summary = (
+                "Local sensitivity to +0.05 standardized feature perturbations; "
+                "not SHAP, additive contributions, or causal evidence. " + summary
+            )
 
         return {
-            "method": "shap_attribution",
+            "method": method,
             "baseline": {"expected_value": round(base_val, 2)},
             "top_contributors": top_contributors,
             "summary": summary,

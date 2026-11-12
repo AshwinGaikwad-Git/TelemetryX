@@ -16,17 +16,18 @@ router = APIRouter(prefix="/engines", tags=["engines"])
 
 @router.get("/{engine_run_id}", response_model=EngineRunDetail)
 def get_engine_detail(
-    engine_run_id: uuid.UUID, db: Session = Depends(get_db_session)
+    engine_run_id: uuid.UUID,
+    model_version_id: uuid.UUID | None = None,
+    db: Session = Depends(get_db_session),
 ) -> dict[str, Any]:
     run = db.get(EngineRun, engine_run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Engine run not found")
 
-    pred = db.scalars(
-        select(RulPrediction)
-        .where(RulPrediction.engine_run_id == run.id)
-        .order_by(RulPrediction.created_at.desc())
-    ).first()
+    query = select(RulPrediction).where(RulPrediction.engine_run_id == run.id)
+    if model_version_id:
+        query = query.where(RulPrediction.model_version_id == model_version_id)
+    pred = db.scalars(query.order_by(RulPrediction.created_at.desc())).first()
 
     pred_dict = None
     expl_dict = None
@@ -79,6 +80,8 @@ def get_engine_cycles(
     engine_run_id: uuid.UUID,
     start_cycle: int = Query(default=1, ge=1),
     end_cycle: int | None = Query(default=None, ge=1),
+    limit: int = Query(default=5000, ge=1, le=10000),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db_session),
 ) -> list[dict[str, Any]]:
     run = db.get(EngineRun, engine_run_id)
@@ -96,7 +99,9 @@ def get_engine_cycles(
     if end_cycle:
         stmt = stmt.where(EngineCycle.cycle <= end_cycle)
 
-    cycles = db.scalars(stmt).all()
+    if end_cycle is not None and end_cycle < start_cycle:
+        raise HTTPException(400, "end_cycle must be at least start_cycle")
+    cycles = db.scalars(stmt.offset(offset).limit(limit)).all()
     return [
         {
             "cycle": c.cycle,

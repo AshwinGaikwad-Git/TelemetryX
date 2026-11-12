@@ -62,7 +62,7 @@ def generate_recommendation(
     )
     interval_str = (
         f"Estimated RUL: {predicted_rul:.1f} cycles "
-        f"(90% CI: {lower_bound:.1f} – {upper_bound:.1f} cycles)."
+        f"(Nominal 90% prediction interval: {lower_bound:.1f} – {upper_bound:.1f} cycles)."
     )
     disclaimer = " [Simulated C-MAPSS benchmark analysis; not operational aviation authorization.]"
 

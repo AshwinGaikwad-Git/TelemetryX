@@ -29,6 +29,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://telemetryx:telemetryx_local_only@db:5432/telemetryx
       REDIS_URL: redis://redis:6379/0
+      JOB_BACKEND: redis
     ports: ["8000:8000"]
     volumes: ["./backend:/app", "./data:/data", "./models:/models"]
     depends_on:
@@ -36,11 +37,12 @@ services:
       redis: { condition: service_healthy }
   worker:
     build: { context: ., dockerfile: infra/docker/backend.Dockerfile }
-    command: uv run dramatiq app.workers.tasks
+    command: uv run dramatiq app.workers.tasks --processes 1 --threads 1
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://telemetryx:telemetryx_local_only@db:5432/telemetryx
       REDIS_URL: redis://redis:6379/0
+      JOB_BACKEND: redis
     volumes: ["./backend:/app", "./data:/data", "./models:/models"]
     depends_on:
       db: { condition: service_healthy }

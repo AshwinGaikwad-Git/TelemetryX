@@ -41,9 +41,11 @@ class EvaluationReport:
     per_unit_results: list[dict[str, Any]]
     band_metrics: dict[str, dict[str, float]]
     sample_size: int
+    interval_metrics: dict[str, float] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "interval_metrics": self.interval_metrics,
             "rmse": round(self.rmse, 3),
             "mae": round(self.mae, 3),
             "r2": round(self.r2, 4),
@@ -58,6 +60,8 @@ def evaluate_predictions(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     unit_ids: list[int] | None = None,
+    lower_bounds: np.ndarray | None = None,
+    upper_bounds: np.ndarray | None = None,
 ) -> EvaluationReport:
     """Computes comprehensive evaluation metrics comparing predicted RUL to ground truth."""
     y_t = np.asarray(y_true, dtype=float)
@@ -104,7 +108,19 @@ def evaluate_predictions(
         else:
             band_metrics[band_name] = {"count": 0, "mae": 0.0, "rmse": 0.0}
 
+    interval_metrics = None
+    if lower_bounds is not None and upper_bounds is not None:
+        lower = np.asarray(lower_bounds, dtype=float)
+        upper = np.asarray(upper_bounds, dtype=float)
+        if lower.shape != y_t.shape or upper.shape != y_t.shape:
+            raise ValueError("Interval bounds must match targets")
+        interval_metrics = {
+            "nominal_coverage": 0.9,
+            "empirical_coverage": round(float(np.mean((y_t >= lower) & (y_t <= upper))), 4),
+            "mean_width": round(float(np.mean(upper - lower)), 3),
+        }
     return EvaluationReport(
+        interval_metrics=interval_metrics,
         rmse=rmse,
         mae=mae,
         r2=r2,

@@ -1,5 +1,6 @@
 """Service for running ML experiments, fitting models, and registering artifacts."""
 
+import subprocess
 import uuid
 from pathlib import Path
 from typing import Any
@@ -10,32 +11,27 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.schemas import ExperimentCreate
+from app.core.config import get_settings
 from app.db.models import (
     DatasetVersion,
-    EngineRun,
     EvaluationRun,
     Experiment,
-    FeatureSet,
     ModelVersion,
 )
 from app.ml.evaluator import evaluate_predictions
-from app.ml.models import GradientBoostingRULModel
-from app.pipelines.constants import SETTINGS_COLUMNS
-from app.pipelines.features import FeatureManifest, LeakFreePreprocessor
+from app.ml.models import GradientBoostingRULModel, NaiveBaselineModel
+from app.pipelines.features import LeakFreePreprocessor, calculate_capped_rul
+from app.services.dataset_service import (
+    DatasetService,
+    persist_feature_snapshot,
+    training_dataframe,
+)
 
 
 def get_models_dir() -> Path:
-    candidates = [
-        Path("models"),
-        Path("../models"),
-        Path(__file__).resolve().parent.parent.parent.parent / "models",
-    ]
-    for c in candidates:
-        if c.exists():
-            return c
-    m = Path("models")
-    m.mkdir(parents=True, exist_ok=True)
-    return m
+    directory = get_settings().model_storage_path
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
 
 
 class ExperimentService:
@@ -73,6 +69,7 @@ class ExperimentService:
                 {
                     "id": m.id,
                     "experiment_id": m.experiment_id,
+                    "dataset_version_id": m.experiment.dataset_version_id,
                     "version": m.version,
                     "artifact_uri": m.artifact_uri,
                     "metrics": m.metrics,
@@ -89,86 +86,67 @@ class ExperimentService:
         if not ds:
             raise ValueError(f"Dataset {req.dataset_version_id} not found")
 
-        # 1. Ensure FeatureSet exists
-        stmt_fs = (
-            select(FeatureSet)
-            .where(FeatureSet.dataset_version_id == ds.id)
-            .order_by(FeatureSet.created_at.desc())
-        )
-        fs = db.scalars(stmt_fs).first()
-        if not fs:
-            from app.services.dataset_service import DatasetService
-
-            fs = DatasetService.prepare_feature_set(db, ds.id, rul_cap=req.rul_cap)
-
-        manifest = FeatureManifest.from_dict(fs.parameters)
-
-        # 2. Reconstruct training telemetry DataFrame
-        runs = db.scalars(
-            select(EngineRun).where(
-                EngineRun.dataset_version_id == ds.id,
-                EngineRun.file_role == "train",
-            )
-        ).all()
-        if not runs:
-            raise ValueError("No training runs found in dataset")
-
-        rows = []
-        for r in runs:
-            for c in r.cycles:
-                row_dict: dict[str, Any] = {
-                    "unit_number": r.unit_number,
-                    "cycle": c.cycle,
-                }
-                for i, setting in enumerate(SETTINGS_COLUMNS):
-                    row_dict[setting] = c.operational_settings[i]
-                for s, val in c.sensor_values.items():
-                    row_dict[s] = val
-                rows.append(row_dict)
-
-        df = pd.DataFrame(rows)
-
-        # 3. Fit-transform features and capped targets
-        preprocessor = LeakFreePreprocessor(rul_cap=manifest.rul_cap)
-        X_df, y_series, fitted_manifest = preprocessor.fit_transform(df)
-
-        feature_cols = fitted_manifest.feature_names
-        units = X_df["unit_number"].unique()
-
-        # Engine-level train/validation split (NO cross-engine leakage)
+        DatasetService.prepare_feature_set(db, ds.id)
+        df = training_dataframe(db, ds.id)
+        units = np.sort(df["unit_number"].unique())
+        if len(units) < 2:
+            raise ValueError("At least two training engines are required for group validation")
         rng = np.random.default_rng(req.random_seed)
-        val_size = max(1, int(len(units) * req.validation_fraction))
+        val_size = min(len(units) - 1, max(1, int(len(units) * req.validation_fraction)))
         shuffled_units = rng.permutation(units)
         val_units = set(shuffled_units[:val_size])
         train_units = set(shuffled_units[val_size:])
-
-        train_mask = X_df["unit_number"].isin(train_units)
-        val_mask = X_df["unit_number"].isin(val_units)
-
-        X_train = X_df.loc[train_mask, feature_cols].to_numpy()
-        y_train = y_series.loc[train_mask].to_numpy()
-
-        X_val = X_df.loc[val_mask, feature_cols].to_numpy()
-        y_val = y_series.loc[val_mask].to_numpy()
-        val_unit_ids = X_df.loc[val_mask, "unit_number"].tolist()
+        train_df = df[df["unit_number"].isin(train_units)].copy()
+        val_df = df[df["unit_number"].isin(val_units)].copy()
+        # Split raw engines BEFORE learning sensor masks or scaler statistics.
+        preprocessor = LeakFreePreprocessor(rul_cap=req.rul_cap)
+        X_train_df, y_train_series, fitted_manifest = preprocessor.fit_transform(train_df)
+        X_val_df = preprocessor.transform(val_df)
+        y_val_series = calculate_capped_rul(val_df, rul_cap=req.rul_cap)
+        feature_cols = fitted_manifest.feature_names
+        X_train = X_train_df[feature_cols].to_numpy()
+        y_train = y_train_series.to_numpy()
+        X_val = X_val_df[feature_cols].to_numpy()
+        y_val = y_val_series.to_numpy()
+        val_unit_ids = X_val_df["unit_number"].tolist()
+        snapshot = pd.concat([X_train_df, X_val_df]).sort_index()
+        targets = pd.concat([y_train_series, y_val_series]).sort_index()
+        manifest_data = fitted_manifest.to_dict()
+        manifest_data["extra"] = {
+            "train_units": sorted(int(u) for u in train_units),
+            "val_units": sorted(int(u) for u in val_units),
+            "dataset_checksum": ds.checksum_sha256,
+        }
+        fitted_manifest.extra = manifest_data["extra"]
+        fs = persist_feature_snapshot(
+            db, ds.id, "experiment-snapshot", snapshot, targets, manifest_data
+        )
 
         # 4. Train Model
         hp = req.hyperparameters
-        model = GradientBoostingRULModel(
+        model: GradientBoostingRULModel | NaiveBaselineModel = GradientBoostingRULModel(
             learning_rate=float(hp.get("learning_rate", 0.08)),
             max_iter=int(hp.get("max_iter", 120)),
             max_depth=int(hp.get("max_depth", 6)),
             random_state=req.random_seed,
         )
+        if req.algorithm == "naive":
+            model = NaiveBaselineModel()
         model.fit(X_train, y_train, manifest=fitted_manifest)
 
         # 5. Evaluate on Validation Group
-        val_preds, _, _ = model.predict(X_val)
-        val_report = evaluate_predictions(y_val, val_preds, unit_ids=val_unit_ids)
+        val_preds, lower, upper = model.predict(X_val)
+        val_report = evaluate_predictions(
+            y_val,
+            val_preds,
+            unit_ids=val_unit_ids,
+            lower_bounds=lower,
+            upper_bounds=upper,
+        )
 
         # 6. Persist Model Artifact
         models_dir = get_models_dir()
-        version_str = f"gbr-v{uuid.uuid4().hex[:8]}"
+        version_str = f"{req.algorithm}-v{uuid.uuid4().hex[:8]}"
         artifact_path = models_dir / f"{version_str}.joblib"
         model.save(artifact_path)
 
@@ -196,6 +174,11 @@ class ExperimentService:
             version=version_str,
             artifact_uri=str(artifact_path),
             feature_manifest=fitted_manifest.to_dict(),
+            training_data_range={
+                "dataset_checksum": ds.checksum_sha256,
+                "feature_snapshot_sha256": fs.parameters["snapshot_sha256"],
+                "code_revision": code_revision(),
+            },
             metrics=val_report.to_dict(),
             status="active",
         )
@@ -218,3 +201,10 @@ class ExperimentService:
             "metrics": val_report.to_dict(),
             "status": "completed",
         }
+
+
+def code_revision() -> str:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"

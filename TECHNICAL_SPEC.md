@@ -1,8 +1,14 @@
 # TelemetryX Technical Specification
 
-**Status:** C-MAPSS/RUL scope approved; implementation pending  
-**Version:** 0.2  
+**Status:** Core MVP implemented; see implementation notes below
+**Version:** 0.3
 **Scope:** Portfolio-quality ML system for aircraft-engine degradation analysis and Remaining Useful Life (RUL) prediction using NASA C-MAPSS
+
+## Implementation notes (2026-11-13)
+
+The remaining sections preserve the approved product design. Current behavior and commands are in README.md and docs/architecture.md. Implemented: immutable FD001 imports, feature snapshots, preprocessing fitted after group splitting, naive/gradient boosting models, nominal intervals with measured coverage, labelled explanation fallback, background job polling/retry/cancel, custom uploads and scoped dashboards.
+
+Deferred: TanStack Query integration, complete shadcn/form-library integration, authentication, GitHub Actions and Playwright. Local execution uses one API process and a background thread; Compose runs Dramatiq/Redis. Redis crash recovery is operator-assisted. Synthetic-demo results do not establish official benchmark performance. Intervals have no calibration guarantee.
 
 ## 1. Product definition and MVP scope
 

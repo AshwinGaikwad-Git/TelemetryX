@@ -7,7 +7,7 @@ describe("HomePage Dashboard", () => {
   it("renders the primary brand header and NASA badge", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { name: "TelemetryX", level: 1 })).toBeInTheDocument();
-    expect(screen.getByText("NASA C-MAPSS FD001")).toBeInTheDocument();
+    expect(screen.getByText("C-MAPSS FD001 - synthetic demo available")).toBeInTheDocument();
   });
 
   it("renders all four navigation tabs", () => {
@@ -34,7 +34,7 @@ describe("HomePage Dashboard", () => {
     // Expect Dataset Explorer content to be rendered
     await waitFor(() => {
       expect(screen.getByText(/Dataset Lineage & Validation/i)).toBeInTheDocument();
-      expect(screen.getByText(/Re-Ingest Samples/i)).toBeInTheDocument();
+      expect(screen.getByText(/Load Synthetic Demo/i)).toBeInTheDocument();
     });
 
     // Click Model Registry tab

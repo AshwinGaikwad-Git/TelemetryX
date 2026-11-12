@@ -14,21 +14,34 @@ class NaiveBaselineModel:
 
     def __init__(self) -> None:
         self.median_rul: float = 125.0
+        self.lower_rul = 0.0
+        self.upper_rul = 125.0
+        self.manifest: FeatureManifest | None = None
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "NaiveBaselineModel":
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        manifest: FeatureManifest | None = None,
+    ) -> "NaiveBaselineModel":
+        self.manifest = manifest
+        self.lower_rul, self.upper_rul = (float(v) for v in np.quantile(y, [0.05, 0.95]))
         self.median_rul = float(np.median(y))
         return self
 
     def predict(self, X: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         n = len(X)
         preds = np.full(n, self.median_rul)
-        lower = np.maximum(0.0, preds - 25.0)
-        upper = preds + 25.0
+        lower = np.full(n, max(0.0, self.lower_rul))
+        upper = np.full(n, self.upper_rul)
         return preds, lower, upper
+
+    def save(self, filepath: str | Path) -> None:
+        joblib.dump({"naive_model": self}, filepath)
 
 
 class GradientBoostingRULModel:
-    """Tabular Gradient Boosting model with calibrated 90% confidence prediction intervals."""
+    """Tabular Gradient Boosting model with nominal 90% quantile prediction intervals."""
 
     def __init__(
         self,
@@ -142,3 +155,13 @@ class GradientBoostingRULModel:
         if bundle.get("manifest"):
             instance.manifest = FeatureManifest.from_dict(bundle["manifest"])
         return instance
+
+
+def load_rul_model(filepath: str | Path) -> GradientBoostingRULModel | NaiveBaselineModel:
+    bundle = joblib.load(filepath)
+    if "naive_model" in bundle:
+        model = bundle["naive_model"]
+        if not isinstance(model, NaiveBaselineModel):
+            raise ValueError("Invalid naive model artifact")
+        return model
+    return GradientBoostingRULModel.load(filepath)

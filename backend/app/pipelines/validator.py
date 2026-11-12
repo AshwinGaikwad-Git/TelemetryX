@@ -112,6 +112,8 @@ def validate_rul_array(
 
     if len(rul_array) == 0:
         errors.append("RUL ground truth file is empty")
+    elif not np.isfinite(rul_array).all():
+        errors.append("RUL values must be finite")
     elif (rul_array < 0).any():
         errors.append("RUL values must be non-negative integers/floats (>= 0)")
 

@@ -51,6 +51,8 @@ import {
 
 import {
   api,
+  Job,
+  waitForJob,
   DatasetVersion,
   EngineDetail,
   EngineRunSummary,
@@ -73,6 +75,14 @@ export default function TelemetryXDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [isLoading, setIsLoading] = useState(false);
   const [isDemoRunning, setIsDemoRunning] = useState(false);
+  const [activeJob, setActiveJob] = useState<Job | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string>("");
+  const [uploadRole, setUploadRole] = useState("train");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [newVersion, setNewVersion] = useState(true);
+  const [datasetDetail, setDatasetDetail] = useState<any>(null);
+  const detailRequest = useRef(0);
+  const refreshRequest = useRef(0);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
@@ -102,55 +112,79 @@ export default function TelemetryXDashboard() {
   const [filterRisk, setFilterRisk] = useState<string>("all");
 
   // Load Initial Dashboard Data
-  const refreshAll = async () => {
+  const refreshAll = async (datasetId?: string, modelId?: string) => {
+    const requestId = ++refreshRequest.current;
     setIsLoading(true);
     try {
-      const summary = await api.getFleetSummary().catch(() => null);
-      if (summary) setFleetSummary(summary);
-
-      const dsList = await api.getDatasets().catch(() => []);
+      const [dsList, modelList, evalList] = await Promise.all([
+        api.getDatasets(), api.getModels(), api.getEvaluations(),
+      ]);
+      if (requestId !== refreshRequest.current) return;
       setDatasets(dsList);
-
-      const activeDs = selectedDatasetId || (dsList.length > 0 ? dsList[0].id : null);
+      setModels(modelList);
+      setEvaluations(evalList);
+      const activeDs = datasetId || selectedDatasetId || dsList[0]?.id;
+      const summary = await api.getFleetSummary(activeDs, modelId === "auto" ? undefined : modelId || selectedModelId || undefined);
+      if (requestId !== refreshRequest.current) return;
+      setFleetSummary(summary);
+      const scopedModel = summary.active_model?.id || "";
+      setSelectedModelId(scopedModel);
       if (activeDs) {
         setSelectedDatasetId(activeDs);
-        const engList = await api.getDatasetEngines(activeDs).catch(() => []);
+        const [engList, detail] = await Promise.all([
+          api.getDatasetEngines(activeDs, undefined, scopedModel || undefined),
+          api.getDataset(activeDs),
+        ]);
+        if (requestId !== refreshRequest.current) return;
+        setDatasetDetail(detail);
         setEngines(engList);
-        if (engList.length > 0 && !selectedEngineId) {
-          setSelectedEngineId(engList[0].id);
-        }
+        const chosen = engList.find(e => e.id === selectedEngineId)?.id || engList[0]?.id || null;
+        setSelectedEngineId(chosen);
+        // Refresh the inspector even when a prediction was added to the same run.
+        if (chosen) await loadEngine(chosen, scopedModel);
+        else { setEngineDetail(null); setEngineCycles([]); }
       }
-
-      const modelList = await api.getModels().catch(() => []);
-      setModels(modelList);
-
-      const evalList = await api.getEvaluations().catch(() => []);
-      setEvaluations(evalList);
     } catch (err: any) {
-      console.error("Refresh error:", err);
+      if (requestId === refreshRequest.current) setFeedbackMsg(`Could not refresh dashboard: ${err.message}`);
     } finally {
-      setIsLoading(false);
+      if (requestId === refreshRequest.current) setIsLoading(false);
+    }
+  };
+
+  const loadEngine = async (id: string, modelId: string) => {
+    const requestId = ++detailRequest.current;
+    setEngineDetail(null);
+    setEngineCycles([]);
+    try {
+      const [detail, cycles] = await Promise.all([
+        api.getEngineDetail(id, modelId || undefined), api.getEngineCycles(id),
+      ]);
+      if (requestId === detailRequest.current) {
+        setEngineDetail(detail);
+        setEngineCycles(cycles);
+      }
+    } catch (err: any) {
+      if (requestId === detailRequest.current) setFeedbackMsg(`Engine loading failed: ${err.message}`);
     }
   };
 
   useEffect(() => {
-    refreshAll();
+    void refreshAll();
+    let previous: string | null = null;
+    try { previous = window.localStorage.getItem("telemetryx-job"); } catch { /* Storage may be disabled. */ }
+    if (previous) {
+      api.getJob(previous).then(async job => {
+        setActiveJob(job);
+        if (job.status === "queued" || job.status === "running") {
+          await waitForJob(job, setActiveJob);
+          await refreshAll();
+        }
+      }).catch((err: any) => setFeedbackMsg(`Job status unavailable: ${err.message}`));
+    }
   }, []);
-
-  // When selectedEngineId changes, fetch engine details & cycle telemetry
   useEffect(() => {
-    if (!selectedEngineId) return;
-
-    api
-      .getEngineDetail(selectedEngineId)
-      .then((detail) => setEngineDetail(detail))
-      .catch((err) => console.error("Engine detail fetch error:", err));
-
-    api
-      .getEngineCycles(selectedEngineId, 1, 250)
-      .then((cycles) => setEngineCycles(cycles))
-      .catch((err) => console.error("Engine cycles fetch error:", err));
-  }, [selectedEngineId]);
+    if (selectedEngineId) void loadEngine(selectedEngineId, selectedModelId);
+  }, [selectedEngineId, selectedModelId]);
 
   // Click outside to close custom engine picker popover
   useEffect(() => {
@@ -169,44 +203,82 @@ export default function TelemetryXDashboard() {
 
   // When selectedDatasetId changes, load its engines
   const handleDatasetChange = async (dsId: string) => {
-    setSelectedDatasetId(dsId);
+    setSelectedModelId("");
+    // Empty model argument resolves the newest model within this dataset.
+    await refreshAll(dsId, "auto");
+  };
+
+  const trackJob = async <T,>(job: Job): Promise<T> => {
+    try { window.localStorage.setItem("telemetryx-job", job.id); } catch { /* Polling still works without persistence. */ }
+    setActiveJob(job);
+    return waitForJob<T>(job, (next) => {
+      setActiveJob(next);
+      setFeedbackMsg(`${next.job_type}: ${next.status} (attempt ${next.attempt_count})`);
+    });
+  };
+
+  const uploadDataset = async () => {
+    if (!uploadFile) return;
+    setIsDemoRunning(true);
     try {
-      const engList = await api.getDatasetEngines(dsId);
-      setEngines(engList);
-      if (engList.length > 0) {
-        setSelectedEngineId(engList[0].id);
-      } else {
-        setSelectedEngineId(null);
-        setEngineDetail(null);
-        setEngineCycles([]);
-      }
-    } catch (err) {
-      console.error("Dataset change error:", err);
-    }
+      const id = newVersion || !selectedDatasetId
+        ? (await api.createDataset()).dataset_id : selectedDatasetId;
+      setSelectedDatasetId(id);
+      setNewVersion(false);
+      await trackJob(await api.importFile(id, uploadRole, uploadFile));
+      await refreshAll(id, "auto");
+      setFeedbackMsg(`Imported ${uploadRole}. Import remaining roles, then prepare and train.`);
+    } catch (err: any) { setFeedbackMsg(err.message); }
+    finally { setIsDemoRunning(false); }
+  };
+
+  const trainSelectedDataset = async () => {
+    if (!selectedDatasetId) return;
+    setIsDemoRunning(true);
+    try {
+      await trackJob(await api.prepareDataset(selectedDatasetId));
+      const result = await trackJob<{ model_version_id: string }>(await api.runExperiment({
+        dataset_version_id: selectedDatasetId,
+      }));
+      await trackJob(await api.runPredictions(result.model_version_id, selectedDatasetId));
+      await refreshAll(selectedDatasetId, result.model_version_id);
+      setFeedbackMsg("Training and predictions completed.");
+    } catch (err: any) { setFeedbackMsg(err.message); }
+    finally { setIsDemoRunning(false); }
+  };
+
+  const runBatch = async (modelId: string) => {
+    if (!selectedDatasetId) return;
+    setIsDemoRunning(true);
+    try {
+      await trackJob(await api.runPredictions(modelId, selectedDatasetId));
+      await refreshAll(selectedDatasetId, modelId);
+    } catch (err: any) { setFeedbackMsg(err.message); }
+    finally { setIsDemoRunning(false); }
   };
 
   // Run One-Click Interactive Demo Pipeline
   const runOneClickDemo = async () => {
     setIsDemoRunning(true);
-    setFeedbackMsg("Ingesting NASA C-MAPSS FD001 raw datasets...");
+    setFeedbackMsg("Loading synthetic C-MAPSS-shaped FD001 fixtures...");
     try {
-      const sampleRes = await api.loadSampleDataset();
+      const sampleRes = await trackJob<{ dataset_id: string }>(await api.loadSampleDataset());
       const dsId = sampleRes.dataset_id;
       setSelectedDatasetId(dsId);
       setFeedbackMsg("Training Quantile Gradient Boosting RUL regressor...");
 
-      const expRes = await api.runExperiment({
+      const expRes = await trackJob<{ model_version_id: string }>(await api.runExperiment({
         dataset_version_id: dsId,
         name: "fd001-gradient-boosting-demo",
         hyperparameters: { learning_rate: 0.08, max_iter: 50, max_depth: 6 },
         rul_cap: 125,
-      });
+      }));
 
-      setFeedbackMsg("Computing batch RUL predictions, confidence bounds, and SHAP attributions...");
-      await api.runPredictions(expRes.model_version_id, dsId, "test");
+      setFeedbackMsg("Computing RUL predictions, quantile bounds, and feature evidence...");
+      await trackJob(await api.runPredictions(expRes.model_version_id, dsId, "test"));
 
-      setFeedbackMsg("Mission telemetry hydrated and ready for inspection.");
-      await refreshAll();
+      setFeedbackMsg("Synthetic demo completed. Ready for inspection.");
+      await refreshAll(dsId, expRes.model_version_id);
       setTimeout(() => setFeedbackMsg(null), 4000);
     } catch (err: any) {
       setFeedbackMsg(`Demo execution error: ${err.message}`);
@@ -295,7 +367,7 @@ export default function TelemetryXDashboard() {
   // Scatter data for actual vs predicted RUL
   const evaluationScatterData = useMemo(() => {
     if (!evaluations || evaluations.length === 0) return [];
-    const latestTest = evaluations.find((e) => e.evaluation_role === "test");
+    const latestTest = evaluations.find((e) => e.evaluation_role === "test" && e.model_version_id === selectedModelId && e.dataset_version_id === selectedDatasetId);
     if (!latestTest || !latestTest.metrics.per_unit_results) return [];
 
     return latestTest.metrics.per_unit_results.map((r) => ({
@@ -304,7 +376,7 @@ export default function TelemetryXDashboard() {
       predicted: r.predicted_rul,
       absError: r.abs_error,
     }));
-  }, [evaluations]);
+  }, [evaluations, selectedModelId, selectedDatasetId]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col md:flex-row antialiased selection:bg-slate-200">
@@ -335,7 +407,7 @@ export default function TelemetryXDashboard() {
                   TelemetryX
                 </h1>
                 <span className="text-[10px] font-semibold text-slate-400 tracking-wide uppercase">
-                  NASA C-MAPSS FD001
+                  C-MAPSS FD001 - synthetic demo available
                 </span>
               </div>
             </div>
@@ -355,7 +427,7 @@ export default function TelemetryXDashboard() {
               className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-60"
             >
               <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-              <span>{isDemoRunning ? "Running Simulation..." : "Quick Demo Setup"}</span>
+              <span>{isDemoRunning ? "Processing..." : "Quick Demo Setup"}</span>
             </button>
           </div>
 
@@ -531,7 +603,7 @@ export default function TelemetryXDashboard() {
           {/* Right Header Indicators */}
           <div className="flex items-center gap-3">
             <button
-              onClick={refreshAll}
+              onClick={() => refreshAll()}
               disabled={isLoading}
               title="Refresh telemetry"
               className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
@@ -541,7 +613,7 @@ export default function TelemetryXDashboard() {
 
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
               <Radio className="w-3 h-3 text-emerald-600" />
-              <span>FD001 Live</span>
+              <span>FD001 Analysis</span>
             </div>
 
             <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
@@ -559,7 +631,19 @@ export default function TelemetryXDashboard() {
         </header>
 
         {/* Global Feedback Banner */}
-        {feedbackMsg && (
+        {activeJob && <div role="status" className="mx-6 my-3 p-3 rounded border bg-white text-sm">
+        Job {activeJob.id}: {activeJob.status} - attempt {activeJob.attempt_count}
+        {activeJob.error && <p className="text-red-700">{activeJob.error}</p>}
+        {activeJob.status === "failed" && <button className="ml-4 underline" onClick={async () => {
+          try { await trackJob(await api.retryJob(activeJob.id)); await refreshAll(); }
+          catch (err: any) { setFeedbackMsg(err.message); }
+        }}>Retry job</button>}
+        {activeJob.status === "queued" && <button className="ml-4 underline" onClick={async () => {
+          try { setActiveJob(await api.cancelJob(activeJob.id)); }
+          catch (err: any) { setFeedbackMsg(err.message); }
+        }}>Cancel queued job</button>}
+      </div>}
+      {feedbackMsg && (
           <div className="bg-sky-50 border-b border-sky-200 px-6 py-2.5 text-xs text-sky-900 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <RefreshCw
@@ -594,7 +678,7 @@ export default function TelemetryXDashboard() {
                     Fleet Reliability & RUL Cockpit
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                    Real-time Remaining Useful Life estimation and degradation tracking for 100 NASA C-MAPSS turbofan units.
+                    Remaining Useful Life estimates for imported engine telemetry. The demo uses synthetic fixtures.
                   </p>
                 </div>
 
@@ -661,7 +745,7 @@ export default function TelemetryXDashboard() {
                       Fleet Maintenance Risk Distribution
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Classified according to calibrated operating cycle thresholds
+                      Classified using illustrative RUL thresholds
                     </p>
                   </div>
                   <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
@@ -764,7 +848,7 @@ export default function TelemetryXDashboard() {
                         Engine Diagnostic Center
                       </h4>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                        Inspect individual turbofans, cycle wear progression, 90% confidence intervals, and NASA ground truth.
+                        Inspect individual turbofans, cycle wear progression, nominal 90% prediction intervals, and imported ground truth.
                       </p>
                     </div>
                   </div>
@@ -865,7 +949,7 @@ export default function TelemetryXDashboard() {
                               {c.predicted_rul} cyc
                             </div>
                             <div className="text-[10px] text-slate-400 font-mono">
-                              90% CI: [{c.lower_bound} – {c.upper_bound}]
+                              Nominal 90% PI: [{c.lower_bound} – {c.upper_bound}]
                             </div>
                           </div>
 
@@ -1231,7 +1315,7 @@ export default function TelemetryXDashboard() {
 
                         {engineDetail.ground_truth_rul !== null && (
                           <div className="mt-3 inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-mono">
-                            NASA Ground Truth RUL:{" "}
+                            Imported Ground Truth RUL:{" "}
                             <span className="font-bold text-emerald-700">
                               {engineDetail.ground_truth_rul} cycles
                             </span>
@@ -1277,17 +1361,17 @@ export default function TelemetryXDashboard() {
                     </div>
                   </div>
 
-                  {/* SHAP Feature Attribution Waterfall */}
+                  {/* Feature Attribution Waterfall */}
                   {engineDetail.explanation && (
                     <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-xs space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
                           <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                             <Sparkles className="w-4 h-4 text-sky-600" />
-                            SHAP Degradation Attributions
+                            Prediction Evidence
                           </h4>
                           <p className="text-xs text-slate-500 mt-0.5">
-                            {engineDetail.explanation.summary}
+                            {engineDetail.explanation.method}: {engineDetail.explanation.summary}
                           </p>
                         </div>
                         <span className="text-[11px] font-mono text-slate-400">
@@ -1332,7 +1416,7 @@ export default function TelemetryXDashboard() {
                                       : "bg-emerald-50 text-emerald-700"
                                   }`}
                                 >
-                                  {isReduction ? "Wear Driver" : "Life Extender"}
+                                  {isReduction ? "Reduces Estimate" : "Raises Estimate"}
                                 </span>
                               </div>
                             </div>
@@ -1437,7 +1521,7 @@ export default function TelemetryXDashboard() {
                     Dataset Lineage & Validation
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    NASA C-MAPSS FD001 raw whitespace files and preprocessed feature matrices
+                    Imported C-MAPSS FD001 files, validation reports and feature snapshots
                   </p>
                 </div>
 
@@ -1448,10 +1532,27 @@ export default function TelemetryXDashboard() {
                     className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isDemoRunning ? "animate-spin" : ""}`} />
-                    <span>Re-Ingest Samples</span>
+                    <span>Load Synthetic Demo</span>
                   </button>
                 </div>
               </div>
+
+              <section className="bg-white p-6 rounded-xl border border-slate-200 space-y-4" aria-label="Import telemetry">
+                <h3 className="font-semibold">Import your C-MAPSS FD001 files</h3>
+                <p className="text-sm text-slate-600">Import train, then test, then test RUL into the same draft version. Prepared versions are sealed. The demo uses generated synthetic data, not the official NASA benchmark.</p>
+                <label className="flex gap-2 text-sm"><input type="checkbox" checked={newVersion} onChange={e => setNewVersion(e.target.checked)} />Create a new dataset version</label>
+                <div className="flex flex-wrap gap-3 items-center">
+                  <label className="text-sm">File role <select aria-label="File role" value={uploadRole} onChange={e => setUploadRole(e.target.value)} className="border rounded p-2 ml-2"><option value="train">Training telemetry</option><option value="test">Test telemetry</option><option value="test_rul">Test RUL labels</option></select></label>
+                  <input aria-label="C-MAPSS file" type="file" accept=".txt" onChange={e => setUploadFile(e.target.files?.[0] || null)} />
+                  <button onClick={uploadDataset} disabled={!uploadFile || isDemoRunning} className="bg-slate-900 text-white rounded px-4 py-2 disabled:opacity-50">Upload file</button>
+                  <button onClick={trainSelectedDataset} disabled={!selectedDatasetId || isDemoRunning} className="border rounded px-4 py-2 disabled:opacity-50">Prepare, train and predict</button>
+                </div>
+                {datasetDetail?.files?.map((file: any) => <div key={file.id} className="text-xs border-t pt-2 break-all">
+                  <strong>{file.file_role}: {file.status}</strong> - {file.row_count} rows - SHA-256 {file.checksum_sha256}
+                  {file.report?.errors?.map((error: string) => <p className="text-red-700" key={error}>{error}</p>)}
+                  {file.report?.warnings?.map((warning: string) => <p className="text-amber-700" key={warning}>{warning}</p>)}
+                </div>)}
+              </section>
 
               {/* Datasets Table */}
               <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
@@ -1604,7 +1705,7 @@ export default function TelemetryXDashboard() {
                     Model Registry & Benchmark Evaluation
                   </h3>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Evaluated models adhere to NASA C-MAPSS benchmark protocols. Features and scalers
+                    Validation and final-cycle test metrics are recorded separately. Features and scalers
                     are fitted strictly on training engine units, eliminating sequence leakage. Official
                     evaluation computes asymmetric penalties where overestimating RUL carries higher cost
                     than conservative predictions.
@@ -1638,6 +1739,20 @@ export default function TelemetryXDashboard() {
                 </div>
               </div>
 
+              <section className="bg-white p-6 rounded-xl border border-slate-200 space-y-3" aria-label="Evaluation scope">
+                <label className="text-sm font-semibold">Selected model
+                  <select aria-label="Selected model" value={selectedModelId} onChange={e => refreshAll(undefined, e.target.value)} className="ml-3 border rounded p-2">
+                    {!selectedModelId && <option value="">No trained model</option>}
+                    {models.filter(m => m.dataset_version_id === selectedDatasetId).map(m => <option key={m.id} value={m.id}>{m.version}</option>)}
+                  </select>
+                </label>
+                <p className="text-xs text-slate-500">Fleet counts include test engines scored by this model in the selected dataset. Validation metrics cover held-out training-engine cycles; test metrics cover final observed test cycles. Their sample counts and NASA score totals differ.</p>
+                {evaluations.filter(e => e.model_version_id === selectedModelId && e.dataset_version_id === selectedDatasetId).filter((e, i, all) => all.findIndex(x => x.evaluation_role === e.evaluation_role) === i).map(e => <div className="border-t pt-3 text-sm" key={e.id}>
+                  <strong>{e.evaluation_role === "test" ? "Final-cycle test" : "Held-out validation cycles"}</strong>: RMSE {e.metrics.rmse}, MAE {e.metrics.mae}, NASA score {e.metrics.nasa_score} ({e.metrics.sample_size} samples)
+                  {e.metrics.interval_metrics && <p className="text-xs text-slate-600">Nominal 90% prediction interval: observed coverage {(e.metrics.interval_metrics.empirical_coverage * 100).toFixed(1)}%, mean width {e.metrics.interval_metrics.mean_width.toFixed(1)} cycles. Coverage is measured, not guaranteed.</p>}
+                </div>)}
+              </section>
+
               {/* Models Table */}
               <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -1645,12 +1760,12 @@ export default function TelemetryXDashboard() {
                     Trained Model Versions
                   </span>
                   <span className="text-xs font-mono text-slate-400">
-                    {models.length} registered
+                    {models.filter(m => m.dataset_version_id === selectedDatasetId).length} registered
                   </span>
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {models.map((m) => (
+                  {models.filter(m => m.dataset_version_id === selectedDatasetId).map((m) => (
                     <div
                       key={m.id}
                       className="p-6 flex flex-wrap items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors"
@@ -1682,9 +1797,10 @@ export default function TelemetryXDashboard() {
                       </div>
 
                       <button
+                        disabled={isDemoRunning}
                         onClick={() => {
                           if (selectedDatasetId) {
-                            api.runPredictions(m.id, selectedDatasetId, "test").then(() => refreshAll());
+                            void runBatch(m.id);
                           }
                         }}
                         className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors cursor-pointer"
@@ -1702,7 +1818,7 @@ export default function TelemetryXDashboard() {
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">
-                        Test Predictions vs NASA Ground Truth RUL
+                        Test Predictions vs Imported Ground Truth RUL
                       </h4>
                       <p className="text-xs text-slate-500 mt-0.5">
                         Evaluation on test units at their final operational cycle

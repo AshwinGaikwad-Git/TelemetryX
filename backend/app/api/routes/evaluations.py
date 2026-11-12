@@ -24,6 +24,7 @@ def list_evaluations(db: Session = Depends(get_db_session)) -> list[dict[str, An
         results.append(
             {
                 "id": r.id,
+                "dataset_version_id": r.dataset_version_id,
                 "model_version_id": r.model_version_id,
                 "model_version": mv.version if mv else "unknown",
                 "evaluation_role": r.evaluation_role,

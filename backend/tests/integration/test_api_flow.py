@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services.job_service import run_job
 
 
 @pytest.fixture
@@ -19,8 +20,8 @@ def test_full_telemetryx_api_workflow(client: TestClient) -> None:
 
     # 2. Load committed synthetic C-MAPSS sample fixtures
     res = client.post("/api/v1/datasets/sample")
-    assert res.status_code == 200
-    data_sample = res.json()
+    assert res.status_code == 202
+    data_sample = finish_job(client, res)
     assert "dataset_id" in data_sample
     dataset_id = data_sample["dataset_id"]
 
@@ -59,8 +60,8 @@ def test_full_telemetryx_api_workflow(client: TestClient) -> None:
         "random_seed": 42,
     }
     res = client.post("/api/v1/experiments", json=exp_payload)
-    assert res.status_code == 200
-    exp_data = res.json()
+    assert res.status_code == 202
+    exp_data = finish_job(client, res)
     assert "model_version_id" in exp_data
     model_id = exp_data["model_version_id"]
 
@@ -72,8 +73,8 @@ def test_full_telemetryx_api_workflow(client: TestClient) -> None:
 
     # 8. Run batch predictions on test engines
     res = client.post(f"/api/v1/models/{model_id}/predictions?dataset_id={dataset_id}&role=test")
-    assert res.status_code == 200
-    preds = res.json()
+    assert res.status_code == 202
+    preds = finish_job(client, res)["predictions"]
     assert len(preds) > 0
     assert "predicted_rul" in preds[0]
     assert "lower_bound" in preds[0]
@@ -113,3 +114,12 @@ def test_full_telemetryx_api_workflow(client: TestClient) -> None:
     assert summary["fleet_size"] > 0
     assert "healthy" in summary["risk_distribution"]
     assert summary["active_model"] is not None
+
+
+def finish_job(client: TestClient, response):
+    assert response.status_code == 202, response.text
+    job = response.json()
+    run_job(job["id"])
+    job = client.get(f"/api/v1/jobs/{job['id']}").json()
+    assert job["status"] == "succeeded", job
+    return job["result"]

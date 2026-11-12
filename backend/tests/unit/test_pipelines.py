@@ -142,3 +142,13 @@ def test_leak_free_preprocessor_preserves_engine_isolation() -> None:
     X_test = preprocessor.transform(test_df)
     assert len(X_test) == len(test_df)
     assert list(X_test.columns) == list(X_train.columns)
+
+
+def test_extra_columns_and_nonfinite_rul_are_rejected() -> None:
+    row = "1 1 0 0 100 " + " ".join(["500"] * 22)
+    _, errors = parse_telemetry_content(row)
+    assert errors
+    _, errors = parse_rul_content("1 2")
+    assert errors
+    report = validate_rul_array(np.array([float("nan")]), 1, [], "hash")
+    assert not report.is_valid

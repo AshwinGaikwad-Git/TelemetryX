@@ -1,20 +1,36 @@
 """Service for aggregating fleet overview KPIs, risk distributions, and alerts."""
 
+import uuid
 from typing import Any
 
 import numpy as np
-from sqlalchemy import select
+from sqlalchemy import false, select
 from sqlalchemy.orm import Session
 
-from app.db.models import ModelVersion, RulPrediction
+from app.db.models import EngineRun, Experiment, ModelVersion, RulPrediction
 
 
 class DashboardService:
     @staticmethod
-    def get_fleet_summary(db: Session) -> dict[str, Any]:
-        # 1. Fetch latest predictions
-        stmt_preds = select(RulPrediction).order_by(RulPrediction.created_at.desc())
-        preds = db.scalars(stmt_preds).all()
+    def get_fleet_summary(
+        db: Session,
+        dataset_id: uuid.UUID | None = None,
+        model_version_id: uuid.UUID | None = None,
+    ) -> dict[str, Any]:
+        model_query = select(ModelVersion).join(Experiment)
+        if dataset_id:
+            model_query = model_query.where(Experiment.dataset_version_id == dataset_id)
+        if model_version_id:
+            model_query = model_query.where(ModelVersion.id == model_version_id)
+        latest_model = db.scalars(model_query.order_by(ModelVersion.created_at.desc())).first()
+        stmt_preds = select(RulPrediction).join(EngineRun).where(EngineRun.file_role == "test")
+        if dataset_id:
+            stmt_preds = stmt_preds.where(EngineRun.dataset_version_id == dataset_id)
+        if latest_model:
+            stmt_preds = stmt_preds.where(RulPrediction.model_version_id == latest_model.id)
+        else:
+            stmt_preds = stmt_preds.where(false())
+        preds = db.scalars(stmt_preds.order_by(RulPrediction.created_at.desc())).all()
 
         risk_dist = {"healthy": 0, "planning": 0, "attention": 0, "urgent": 0}
         critical_engines = []
@@ -62,10 +78,6 @@ class DashboardService:
         critical_engines.sort(key=lambda x: float(str(x["predicted_rul"])))
 
         total_count = len(seen_runs) if seen_runs else 0
-
-        # Latest active model
-        stmt_m = select(ModelVersion).order_by(ModelVersion.created_at.desc())
-        latest_model = db.scalars(stmt_m).first()
 
         active_model_dict = None
         if latest_model:

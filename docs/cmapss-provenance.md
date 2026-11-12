@@ -37,11 +37,10 @@ In FD001, data is packaged across three canonical text files:
 2. `test_FD001.txt`: Truncated engine operating sequences for 100 units. The time series is stopped at an unspecified cycle prior to system failure.
 3. `RUL_FD001.txt`: A single column of 100 integer values containing the actual Remaining Useful Life (RUL in cycles) for each corresponding test unit at its final recorded test cycle.
 
-## 5. File Verification and Checksums
-Official canonical SHA-256 checksums for the standard NASA C-MAPSS FD001 distribution:
+## 5. Local source identity and verification
 
-- `train_FD001.txt`: `35c24e6c3be31e4cbbe89b14c3876e5dbe48d7c49bcf279b90c9b0e11899a1be` (approx. 20,631 records)
-- `test_FD001.txt`: `4a49c69d08e5e6e8a38b1f506822fc9496f8c7e14856fdb46d90a94488344e7c` (approx. 13,096 records)
-- `RUL_FD001.txt`: `e09cf38435d893ebfa55e8d89e5251c6c06a6b8c8d8b9f1d0b7d8b5a03498901` (100 rows)
+The committed `data/samples` files are generated synthetic C-MAPSS-shaped fixtures. Their generator is `scripts/generate_synthetic_cmapss.py` (seed 42; default 15 training units and 10 test units). They are not NASA's original FD001 distribution and cannot establish official benchmark accuracy.
 
-Synthetic fixtures generated within TelemetryX strictly adhere to this schema and formatting contract while preserving reproducible offline testing capability.
+Original NASA files must be obtained separately and imported into a fresh dataset version. The importer records SHA-256 over the exact uploaded bytes, role, filename, parser report, row count and engine count. Dataset detail exposes these values. Line endings and whitespace affect byte hashes, even when telemetry values are equivalent. This repository does not assert canonical official-distribution checksums.
+
+Preparing seals a version. Experiment manifests reference its checksum and persist separate feature snapshots with train/validation unit IDs, scaler parameters and snapshot checksums. Changed inputs require a new version. Synthetic source records identify the generator path and data kind explicitly.

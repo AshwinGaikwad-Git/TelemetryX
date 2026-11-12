@@ -110,3 +110,29 @@ def test_explainability_attribution() -> None:
     assert "summary" in explanation
     top_c = explanation["top_contributors"]
     assert top_c[0]["magnitude"] >= top_c[1]["magnitude"]
+
+
+def test_interval_metrics_measure_coverage_and_width() -> None:
+    report = evaluate_predictions(
+        np.array([10.0, 20.0]),
+        np.array([12.0, 18.0]),
+        lower_bounds=np.array([9.0, 15.0]),
+        upper_bounds=np.array([15.0, 19.0]),
+    )
+    assert report.interval_metrics == {
+        "nominal_coverage": 0.9,
+        "empirical_coverage": 0.5,
+        "mean_width": 5.0,
+    }
+
+
+def test_explanation_fallback_is_labelled_as_sensitivity() -> None:
+    class Estimator:
+        def predict(self, values):
+            return values.sum(axis=1)
+
+    explainer = PredictionExplainer(Estimator(), ["sensor_2", "sensor_3"])
+    explainer.explainer = None
+    result = explainer.explain_instance(np.array([1.0, 2.0]))
+    assert result["method"] == "local_perturbation"
+    assert "not SHAP" in result["summary"]

@@ -18,7 +18,7 @@ from app.db.models import (
 )
 from app.ml.evaluator import evaluate_predictions
 from app.ml.explainability import PredictionExplainer
-from app.ml.models import GradientBoostingRULModel
+from app.ml.models import NaiveBaselineModel, load_rul_model
 from app.ml.risk import generate_recommendation, map_rul_to_risk
 from app.pipelines.constants import SETTINGS_COLUMNS
 from app.pipelines.features import FeatureManifest, LeakFreePreprocessor
@@ -128,8 +128,12 @@ class PredictionService:
             raise ValueError(f"ModelVersion {model_version_id} not found")
 
         # 1. Load model bundle
-        model = GradientBoostingRULModel.load(mv.artifact_uri)
+        model = load_rul_model(mv.artifact_uri)
         manifest = FeatureManifest.from_dict(mv.feature_manifest)
+        if role not in ("train", "test"):
+            raise ValueError("Prediction role must be train or test")
+        if not model.manifest or model.manifest.to_dict() != manifest.to_dict():
+            raise ValueError("Model artifact and registered feature manifest are incompatible")
 
         # 2. Load engine runs for target role
         runs = db.scalars(
@@ -163,30 +167,21 @@ class PredictionService:
         X_df = preprocessor.transform(df, manifest=manifest)
         feature_cols = manifest.feature_names
 
-        # Explainer for feature attribution
-        explainer = PredictionExplainer(
-            point_model=model.point_model,
-            feature_names=feature_cols,
-            background_data=X_df[feature_cols].to_numpy()[:20],
-        )
-
-        # Delete prior predictions for this model and dataset
-        existing_preds = db.scalars(
-            select(RulPrediction)
-            .join(EngineRun)
-            .where(
-                RulPrediction.model_version_id == model_version_id,
-                EngineRun.dataset_version_id == dataset_id,
+        explainer = (
+            None
+            if isinstance(model, NaiveBaselineModel)
+            else PredictionExplainer(
+                point_model=model.point_model,
+                feature_names=feature_cols,
             )
-        ).all()
-        for ep in existing_preds:
-            db.delete(ep)
-        db.flush()
+        )
 
         results = []
         true_ruls = []
         pred_ruls = []
         unit_ids = []
+        lowers = []
+        uppers = []
 
         # Predict for the final cycle of each unit
         for r in runs:
@@ -205,7 +200,16 @@ class PredictionService:
             risk = map_rul_to_risk(pred_val)
 
             # Explain instance
-            explanation_data = explainer.explain_instance(x_vec[0], top_k=5)
+            explanation_data: dict[str, Any] = (
+                explainer.explain_instance(x_vec[0], top_k=5)
+                if explainer
+                else {
+                    "method": "constant_baseline",
+                    "baseline": {"expected_value": pred_val},
+                    "top_contributors": [],
+                    "summary": "Median training-row capped RUL baseline; no sensor attribution.",
+                }
+            )
 
             # Generate recommendation
             rec = generate_recommendation(
@@ -216,7 +220,14 @@ class PredictionService:
             )
 
             # Persist Prediction
-            rul_pred = RulPrediction(
+            existing = db.scalars(
+                select(RulPrediction).where(
+                    RulPrediction.model_version_id == mv.id,
+                    RulPrediction.engine_run_id == r.id,
+                    RulPrediction.cycle == final_cycle,
+                )
+            ).first()
+            rul_pred = existing or RulPrediction(
                 model_version_id=mv.id,
                 engine_run_id=r.id,
                 cycle=final_cycle,
@@ -236,7 +247,8 @@ class PredictionService:
                 top_contributors=explanation_data["top_contributors"],
                 summary=explanation_data.get("summary"),
             )
-            db.add(pred_expl)
+            if not existing:
+                db.add(pred_expl)
 
             # Persist Recommendation
             maint_rec = MaintenanceRecommendation(
@@ -245,12 +257,15 @@ class PredictionService:
                 priority=rec.priority,
                 rationale=rec.rationale,
             )
-            db.add(maint_rec)
+            if not existing:
+                db.add(maint_rec)
 
             if r.ground_truth_rul is not None:
                 true_ruls.append(float(r.ground_truth_rul))
                 pred_ruls.append(pred_val)
                 unit_ids.append(r.unit_number)
+                lowers.append(lower_val)
+                uppers.append(upper_val)
 
             results.append(
                 {
@@ -270,7 +285,11 @@ class PredictionService:
         # 4. If ground truth RUL was available for test units, compute official test evaluation
         if true_ruls:
             test_report = evaluate_predictions(
-                np.array(true_ruls), np.array(pred_ruls), unit_ids=unit_ids
+                np.array(true_ruls),
+                np.array(pred_ruls),
+                unit_ids=unit_ids,
+                lower_bounds=np.array(lowers),
+                upper_bounds=np.array(uppers),
             )
             eval_run = EvaluationRun(
                 model_version_id=mv.id,

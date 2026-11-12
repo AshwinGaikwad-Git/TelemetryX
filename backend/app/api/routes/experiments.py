@@ -3,13 +3,14 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.schemas import ExperimentCreate, ExperimentOut
 from app.db.models import Experiment
 from app.db.session import get_db_session
 from app.services.experiment_service import ExperimentService
+from app.services.job_service import enqueue, job_dict
 
 router = APIRouter(prefix="/experiments", tags=["experiments"])
 
@@ -19,12 +20,16 @@ def list_experiments(db: Session = Depends(get_db_session)) -> list[dict[str, An
     return ExperimentService.list_experiments(db)
 
 
-@router.post("", response_model=dict[str, Any])
-def run_experiment(req: ExperimentCreate, db: Session = Depends(get_db_session)) -> dict[str, Any]:
+@router.post("", status_code=202)
+def run_experiment(
+    req: ExperimentCreate,
+    db: Session = Depends(get_db_session),
+    idempotency_key: str | None = Header(default=None),
+) -> dict[str, Any]:
     try:
-        return ExperimentService.run_training_experiment(db, req)
-    except Exception as ex:
-        raise HTTPException(status_code=400, detail=str(ex)) from ex
+        return job_dict(enqueue(db, "train", req.model_dump(mode="json"), idempotency_key))
+    except ValueError as error:
+        raise HTTPException(409, str(error)) from error
 
 
 @router.get("/{experiment_id}", response_model=dict[str, Any])

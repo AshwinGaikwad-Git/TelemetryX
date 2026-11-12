@@ -385,6 +385,8 @@ class JobRun(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
     job_type: Mapped[str] = mapped_column(sa.String(100), nullable=False, index=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(sa.JSON, default=dict, nullable=False)
+    result: Mapped[dict[str, Any] | None] = mapped_column(sa.JSON, nullable=True)
     idempotency_key: Mapped[str] = mapped_column(sa.String(255), unique=True, nullable=False)
     entity_id: Mapped[uuid.UUID | None] = mapped_column(sa.Uuid, nullable=True)
     status: Mapped[str] = mapped_column(

@@ -100,6 +100,7 @@ export interface FleetSummary {
 }
 
 export interface ModelVersion {
+  dataset_version_id: string;
   id: string;
   experiment_id: string;
   version: string;
@@ -110,12 +111,14 @@ export interface ModelVersion {
     r2: number;
     nasa_score: number;
     sample_size: number;
+    interval_metrics?: { nominal_coverage: number; empirical_coverage: number; mean_width: number } | null;
   };
   status: string;
   created_at: string;
 }
 
 export interface EvaluationRun {
+  dataset_version_id: string;
   id: string;
   model_version_id: string;
   model_version: string;
@@ -126,6 +129,7 @@ export interface EvaluationRun {
     r2: number;
     nasa_score: number;
     sample_size: number;
+    interval_metrics?: { nominal_coverage: number; empirical_coverage: number; mean_width: number } | null;
     per_unit_results?: Array<{
       unit_number: number;
       actual_rul: number;
@@ -138,12 +142,38 @@ export interface EvaluationRun {
   created_at: string;
 }
 
+export interface Job {
+  id: string;
+  job_type: string;
+  status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  attempt_count: number;
+  error: string | null;
+  result: Record<string, any> | null;
+}
+
+export async function waitForJob<T>(job: Job, onProgress?: (job: Job) => void): Promise<T> {
+  const started = Date.now();
+  while (true) {
+    onProgress?.(job);
+    if (job.status === "succeeded") return job.result as T;
+    if (job.status === "failed" || job.status === "cancelled") {
+      const details = job.result?.report?.errors?.join("; ");
+      throw new Error(`${details || job.error || job.status} (Job ${job.id})`);
+    }
+    if (Date.now() - started > 30 * 60 * 1000) {
+      throw new Error(`Job ${job.id} is still processing. Refresh to reconnect.`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    job = await request<Job>(`/jobs/${job.id}`);
+  }
+}
+
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   const res = await fetch(url, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(options?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       ...options?.headers,
     },
   });
@@ -157,19 +187,36 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getFleetSummary: () => request<FleetSummary>("/dashboard/summary"),
+  getFleetSummary: (datasetId?: string, modelId?: string) => {
+    const params = new URLSearchParams();
+    if (datasetId) params.set("dataset_id", datasetId);
+    if (modelId) params.set("model_version_id", modelId);
+    return request<FleetSummary>(`/dashboard/summary?${params}`);
+  },
+  getJob: (id: string) => request<Job>(`/jobs/${id}`),
+  retryJob: (id: string) => request<Job>(`/jobs/${id}/retry`, { method: "POST" }),
+  cancelJob: (id: string) => request<Job>(`/jobs/${id}/cancel`, { method: "POST" }),
+  createDataset: () => request<{ dataset_id: string }>("/datasets", { method: "POST" }),
+  prepareDataset: (id: string) => request<Job>(`/datasets/${id}/prepare`, { method: "POST" }),
+  importFile: (datasetId: string, role: string, file: File) => {
+    const body = new FormData();
+    body.set("dataset_id", datasetId);
+    body.set("file_role", role);
+    body.set("file", file);
+    return request<Job>("/datasets/imports", { method: "POST", body });
+  },
   getDatasets: () => request<DatasetVersion[]>("/datasets"),
   getDataset: (id: string) => request<any>(`/datasets/${id}`),
   loadSampleDataset: () =>
-    request<{ dataset_id: string; reports: any }>("/datasets/sample", {
+    request<Job>("/datasets/sample", {
       method: "POST",
     }),
-  getDatasetEngines: (datasetId: string, role?: string) =>
+  getDatasetEngines: (datasetId: string, role?: string, modelId?: string) =>
     request<EngineRunSummary[]>(
-      `/datasets/${datasetId}/engines${role ? `?role=${role}` : ""}`
+      `/datasets/${datasetId}/engines?${new URLSearchParams({ ...(role ? { role } : {}), ...(modelId ? { model_version_id: modelId } : {}) })}`
     ),
-  getEngineDetail: (engineRunId: string) =>
-    request<EngineDetail>(`/engines/${engineRunId}`),
+  getEngineDetail: (engineRunId: string, modelId?: string) =>
+    request<EngineDetail>(`/engines/${engineRunId}${modelId ? `?model_version_id=${modelId}` : ""}`),
   getEngineCycles: (engineRunId: string, start?: number, end?: number) =>
     request<EngineCycleData[]>(
       `/engines/${engineRunId}/cycles?start_cycle=${start || 1}${end ? `&end_cycle=${end}` : ""}`
@@ -183,19 +230,13 @@ export const api = {
     rul_cap?: number;
     validation_fraction?: number;
   }) =>
-    request<{
-      experiment_id: string;
-      model_version_id: string;
-      version: string;
-      metrics: any;
-      status: string;
-    }>("/experiments", {
+    request<Job>("/experiments", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
   getModels: () => request<ModelVersion[]>("/models"),
   runPredictions: (modelId: string, datasetId: string, role: string = "test") =>
-    request<any[]>(
+    request<Job>(
       `/models/${modelId}/predictions?dataset_id=${datasetId}&role=${role}`,
       { method: "POST" }
     ),

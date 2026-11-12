@@ -1,7 +1,7 @@
 """Models API routes: list trained model versions and execute batch predictions."""
 
 import uuid
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -10,7 +10,7 @@ from app.api.schemas import ModelVersionOut
 from app.db.models import ModelVersion
 from app.db.session import get_db_session
 from app.services.experiment_service import ExperimentService
-from app.services.prediction_service import PredictionService
+from app.services.job_service import enqueue, job_dict
 
 router = APIRouter(prefix="/models", tags=["models"])
 
@@ -38,19 +38,21 @@ def get_model(model_id: uuid.UUID, db: Session = Depends(get_db_session)) -> dic
     }
 
 
-@router.post("/{model_id}/predictions", response_model=list[dict[str, Any]])
+@router.post("/{model_id}/predictions", status_code=202)
 def run_predictions(
     model_id: uuid.UUID,
     dataset_id: uuid.UUID = Query(...),
-    role: str = Query(default="test"),
+    role: Literal["train", "test"] = Query(default="test"),
     db: Session = Depends(get_db_session),
-) -> list[dict[str, Any]]:
-    try:
-        return PredictionService.run_predictions_for_dataset(
-            db=db,
-            model_version_id=model_id,
-            dataset_id=dataset_id,
-            role=role,
+) -> dict[str, Any]:
+    return job_dict(
+        enqueue(
+            db,
+            "predict",
+            {
+                "model_id": str(model_id),
+                "dataset_id": str(dataset_id),
+                "role": role,
+            },
         )
-    except Exception as ex:
-        raise HTTPException(status_code=400, detail=str(ex)) from ex
+    )

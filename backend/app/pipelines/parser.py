@@ -31,14 +31,9 @@ def parse_telemetry_content(raw_text: str) -> tuple[pd.DataFrame, list[str]]:
         if not stripped:
             continue
         parts = stripped.split()
-        if len(parts) < 26:
+        if len(parts) != 26:
             errors.append(f"Line {line_idx}: expected 26 columns, found {len(parts)}")
             continue
-        # C-MAPSS files sometimes have extra trailing empty tokens or trailing spaces
-        if len(parts) > 26:
-            # If extra tokens are present, verify if they can be safely ignored
-            parts = parts[:26]
-
         try:
             unit = int(parts[0])
             cycle = int(parts[1])
@@ -71,6 +66,9 @@ def parse_rul_content(raw_text: str) -> tuple[np.ndarray, list[str]]:
             continue
         parts = stripped.split()
         if not parts:
+            continue
+        if len(parts) != 1:
+            errors.append(f"Line {line_idx}: expected one RUL column, found {len(parts)}")
             continue
         try:
             val = float(parts[0])

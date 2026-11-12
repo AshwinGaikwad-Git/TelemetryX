@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -64,12 +64,12 @@ class EngineCycleTelemetry(BaseModel):
 class ExperimentCreate(BaseModel):
     name: str = "fd001-gradient-boosting-v1"
     dataset_version_id: uuid.UUID
-    algorithm: str = "gradient_boosting"
+    algorithm: Literal["gradient_boosting", "naive"] = "gradient_boosting"
     hyperparameters: dict[str, Any] = Field(
         default_factory=lambda: {"learning_rate": 0.08, "max_iter": 120, "max_depth": 6}
     )
-    rul_cap: int = 125
-    validation_fraction: float = 0.2
+    rul_cap: int = Field(default=125, ge=1, le=10000)
+    validation_fraction: float = Field(default=0.2, gt=0, lt=1)
     random_seed: int = 42
 
 
@@ -88,6 +88,7 @@ class ExperimentOut(BaseModel):
 
 
 class ModelVersionOut(BaseModel):
+    dataset_version_id: uuid.UUID
     id: uuid.UUID
     experiment_id: uuid.UUID
     version: str
@@ -121,6 +122,7 @@ class PredictionOut(BaseModel):
 
 # Evaluation
 class EvaluationOut(BaseModel):
+    dataset_version_id: uuid.UUID
     id: uuid.UUID
     model_version_id: uuid.UUID
     model_version: str
