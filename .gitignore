@@ -34,5 +34,8 @@ saved_models/*
 .vscode/
 .idea/
 *.log
-Thumbs.db
-.DS_Store
+# SQLite dev databases
+*.db
+*.sqlite
+*.sqlite3
+
