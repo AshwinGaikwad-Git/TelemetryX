@@ -6,6 +6,8 @@
 
 ## Implementation notes (2026-11-13)
 
+An industrial pilot now extends this research specification: company membership, machinery/sensor registration, timestamped telemetry, quality/freshness, rule-based alerts, work orders and audit history. Its implemented scope and remaining work are described in docs/industrial-pilot.md. Research models remain isolated at /demo.
+
 The remaining sections preserve the approved product design. Current behavior and commands are in README.md and docs/architecture.md. Implemented: immutable FD001 imports, feature snapshots, preprocessing fitted after group splitting, naive/gradient boosting models, nominal intervals with measured coverage, labelled explanation fallback, background job polling/retry/cancel, custom uploads and scoped dashboards.
 
 Deferred: TanStack Query integration, complete shadcn/form-library integration, authentication, GitHub Actions and Playwright. Local execution uses one API process and a background thread; Compose runs Dramatiq/Redis. Redis crash recovery is operator-assisted. Synthetic-demo results do not establish official benchmark performance. Intervals have no calibration guarantee.

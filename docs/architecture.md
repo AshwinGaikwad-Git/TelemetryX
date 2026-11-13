@@ -1,5 +1,7 @@
 # TelemetryX architecture
 
+Industrial company-scoped operations are implemented in `app.industrial` and `frontend/components/industrial`; see [industrial pilot](industrial-pilot.md). The remaining sections describe the preserved C-MAPSS research subsystem at `/demo`.
+
 The implemented system is a modular monolith: a Next.js dashboard calls FastAPI routes; routes enqueue persisted jobs; services handle dataset preparation, model training and inference. SQLAlchemy stores domain records. Local disk stores exact raw bytes, checksummed feature snapshots and joblib model bundles.
 
 ## Request and job boundaries
@@ -28,4 +30,4 @@ Risk derives from the point estimate with illustrative thresholds (>30, 15-30, 5
 
 The four tabs live in `frontend/app/page.tsx`. `frontend/lib/api.ts` handles typed JSON/multipart requests and job polling. React state handles selected dataset/model, errors and loading. The last job ID survives a page reload. Fleet aggregation uses test engines in one dataset/model scope; engine details and evaluation plots use the same selection.
 
-SQLite/PostgreSQL selection is explicit and schema upgrades use Alembic. No silent fallback redirects writes to another store. Readiness checks database connectivity. Request IDs and job IDs appear in structured logs. Configured storage paths and upload limits are applied; cycle queries are bounded/paginated. Authentication and multi-user production access are deferred.
+SQLite/PostgreSQL selection is explicit and schema upgrades use Alembic. No silent fallback redirects writes to another store. Readiness checks database connectivity. Request IDs and job IDs appear in structured logs. Configured storage paths and upload limits are applied; cycle queries are bounded/paginated. Industrial authentication is separate from the research subsystem. Legacy demo API routes are development-only.

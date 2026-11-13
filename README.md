@@ -1,8 +1,12 @@
-# TelemetryX
+# TelemetryX Industrial
 
-TelemetryX estimates turbofan-engine Remaining Useful Life (RUL) in operating cycles from C-MAPSS-shaped telemetry. It includes file validation and provenance, reproducible feature snapshots, group-held-out ML experiments, nominal prediction intervals, feature evidence, and a four-tab inspection dashboard.
+TelemetryX now has an industrial pilot workspace at `/`: company accounts, sites, machinery, timestamped sensor telemetry, connection quality, sustained-threshold alerts and maintenance work orders. The existing C-MAPSS research cockpit is preserved at `/demo`.
 
-**Data identity:** Quick Demo Setup uses locally generated synthetic fixtures, not the official NASA FD001 files. Official files can be imported separately. Synthetic-demo results are not official NASA benchmark results. Risk bands are illustrative; outputs are simulated research analysis, not aircraft maintenance or dispatch authorization.
+**Industrial workflow:** create a company account -> register a site -> register a machine -> define sensors/units/limits -> import CSV or send authenticated HTTP batches -> review condition and connectivity -> acknowledge alerts -> assign work -> record findings and downtime -> verify completion.
+
+Start the API and frontend with the commands below, open http://localhost:3000, and create your first account. There are no preset passwords and no machinery readings are inserted into your company automatically. A password must contain at least 12 characters. See [industrial pilot guide](docs/industrial-pilot.md) for access roles, telemetry contracts, endpoints and current deployment limits.
+
+**Prediction scope:** the industrial workspace currently uses transparent threshold monitoring. Equipment-specific anomaly, failure and RUL models require real labelled operating histories and are not enabled. The `/demo` uses synthetic C-MAPSS-shaped fixtures, not official NASA benchmark data; its models do not score industrial machines.
 
 ## Stack and workflow
 
@@ -34,7 +38,7 @@ corepack pnpm install
 corepack pnpm dev
 ```
 
-Open http://localhost:3000. API docs: http://localhost:8000/docs.
+Open http://localhost:3000 for industrial operations or http://localhost:3000/demo for research. API docs: http://localhost:8000/docs.
 
 The local executor runs jobs outside request handlers in one background thread. Use only **one API process** in local mode. On API restart, queued jobs resume; interrupted running jobs become failed and can be retried. The dashboard reconnects to its most recent job after a page reload. A multi-step demo interrupted between jobs can be continued using the registry's prediction action.
 
@@ -124,4 +128,4 @@ corepack pnpm build
 
 Backend tests use temporary databases/storage and never ingest into your development database or overwrite your model files. Regression coverage includes holdout-only preprocessing, immutable byte-preserving imports, artifact compatibility, jobs/retries, migration preservation, interval metrics and dataset/model scoping. Frontend tests cover jobs, multipart imports, demo orchestration and error presentation.
 
-Authentication, multi-user access, sequence neural models, CI/Playwright automation and production deployment hardening remain outside this implementation. See [architecture](docs/architecture.md), [data dictionary](docs/data-dictionary.md) and [data provenance](docs/cmapss-provenance.md).
+SSO/MFA, email verification and account recovery, protocol gateways, equipment-specific predictive models, CI/Playwright automation and production deployment hardening remain future work. See [architecture](docs/architecture.md), [data dictionary](docs/data-dictionary.md) and [data provenance](docs/cmapss-provenance.md).

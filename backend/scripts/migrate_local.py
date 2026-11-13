@@ -36,7 +36,7 @@ def migrate() -> Path:
     engine.dispose()
     directory = database.parent.parent / "data" / "backups"
     directory.mkdir(parents=True, exist_ok=True)
-    backup = directory / f"telemetryx-before-0003-{datetime.now(UTC):%Y%m%dT%H%M%S%f}.db"
+    backup = directory / f"telemetryx-before-upgrade-{datetime.now(UTC):%Y%m%dT%H%M%S%f}.db"
     with sqlite3.connect(database) as source, sqlite3.connect(backup) as destination:
         source.backup(destination)
         counts = {

@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import HomePage from "../app/page";
+import HomePage from "../app/demo/page";
 
 describe("HomePage Dashboard", () => {
   it("renders the primary brand header and NASA badge", () => {

@@ -21,12 +21,14 @@ from sqlalchemy.orm import sessionmaker  # noqa: E402
 
 from app.db.base import Base  # noqa: E402
 from app.db.session import get_db_session  # noqa: E402
+from app.industrial.auth import _attempts  # noqa: E402
 from app.main import app  # noqa: E402
 from app.services import job_service  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
 def isolated_database(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
+    _attempts.clear()
     engine = create_engine(
         f"sqlite:///{tmp_path / 'test.db'}", connect_args={"check_same_thread": False}
     )

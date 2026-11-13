@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import HomePage from "../app/page";
+import HomePage from "../app/demo/page";
 import { api, Job, waitForJob } from "../lib/api";
 
 const dataset = {

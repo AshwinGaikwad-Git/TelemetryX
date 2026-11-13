@@ -1,12 +1,22 @@
 import logging
+import sqlite3
 from collections.abc import Generator
+from typing import Any
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+@event.listens_for(Engine, "connect")
+def sqlite_foreign_keys(connection: Any, connection_record: Any) -> None:
+    if isinstance(connection, sqlite3.Connection):
+        connection.execute("PRAGMA foreign_keys=ON")
+
 
 db_url = get_settings().database_url
 connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}

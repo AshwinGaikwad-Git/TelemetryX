@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.datasets import router as datasets_router
@@ -18,6 +19,8 @@ from app.api.routes.models import router as models_router
 from app.api.routes.predictions import router as predictions_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, request_id_context
+from app.industrial.auth import router as industrial_auth_router
+from app.industrial.routes import router as industrial_router
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -33,14 +36,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title=settings.app_name, version="0.3.0", openapi_url="/api/v1/openapi.json", lifespan=lifespan
+    title=settings.app_name, version="0.4.0", openapi_url="/api/v1/openapi.json", lifespan=lifespan
 )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "X-Request-ID", "Idempotency-Key"],
+    allow_headers=["Content-Type", "X-Request-ID", "Idempotency-Key", "X-Ingestion-Key"],
 )
 
 
@@ -52,6 +55,17 @@ async def correlation_id_middleware(
     token = request_id_context.set(request_id)
     started_at = time.perf_counter()
     try:
+        if request.url.path.startswith("/api/v1/industrial"):
+            origin = request.headers.get("origin")
+            if request.method not in ("GET", "HEAD", "OPTIONS") and origin:
+                if origin not in settings.cors_origins:
+                    return JSONResponse(
+                        {"detail": "Request origin is not allowed"}, status_code=403
+                    )
+        elif settings.environment != "development" and not request.url.path.startswith(
+            ("/api/v1/health", "/docs", "/redoc", "/api/v1/openapi.json")
+        ):
+            return JSONResponse({"detail": "Demo API is development-only"}, status_code=404)
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
         logger.info(
@@ -77,3 +91,5 @@ app.include_router(predictions_router, prefix="/api/v1")
 app.include_router(evaluations_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(jobs_router, prefix="/api/v1")
+app.include_router(industrial_auth_router, prefix="/api/v1")
+app.include_router(industrial_router, prefix="/api/v1")
