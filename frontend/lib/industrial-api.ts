@@ -40,16 +40,19 @@ export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 export async function industrialRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL ||
-    `http://${typeof window === "undefined" ? "localhost" : window.location.hostname}:8000/api/v1`;
-  const response = await fetch(`${base}/industrial${path}`, {
-    ...options, credentials: "include",
-    headers: { ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...options.headers },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`/api/v1/industrial${path}`, {
+      ...options, credentials: "include",
+      headers: { ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...options.headers },
+    });
+  } catch {
+    throw new ApiError(503, "Cannot reach TelemetryX. Check that the website and backend are running, then try again.");
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     const message = typeof payload.detail === "string" ? payload.detail :
-      Array.isArray(payload.detail) ? payload.detail.map((e: { loc: string[]; msg: string }) => `${e.loc.slice(1).join(".")}: ${e.msg}`).join("; ") : "Request failed";
+      Array.isArray(payload.detail) ? payload.detail.map((e: { loc: string[]; msg: string }) => `${e.loc.slice(1).join(".")}: ${e.msg}`).join("; ") : response.status >= 500 ? "The TelemetryX backend is unavailable. Please restart it and try again." : "Request failed";
     throw new ApiError(response.status, message);
   }
   return response.status === 204 ? undefined as T : response.json();

@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import IndustrialWorkspace from "../components/industrial/workspace";
-import { Role } from "../lib/industrial-api";
+import { industrialRequest, post, Role } from "../lib/industrial-api";
 
 const profile = { id: "user-1", name: "Pilot Manager", email: "manager@example.com", companies: [
   { id: "company-1", name: "Pilot Works", role: "admin" },
@@ -22,7 +22,7 @@ function response(data: unknown, status = 200) {
 }
 function mockWorkspace({ populated = false, role = "admin" as Role, alert = false } = {}) {
   const fetch = vi.fn((url: string, options?: RequestInit) => {
-    const path = new URL(url).pathname;
+    const path = new URL(url, "http://localhost:3000").pathname;
     if (path.endsWith("/auth/me")) return response({ ...profile, companies: [{ ...profile.companies[0], role }, profile.companies[1]] });
     if (path.endsWith("/auth/logout")) return response(null, 204);
     if (options?.method === "POST" && path.endsWith("/imports")) return response({ accepted: 1, duplicates: 0, rejected: 0, errors: [], checksum_sha256: "source-checksum" });
@@ -41,6 +41,27 @@ function mockWorkspace({ populated = false, role = "admin" as Role, alert = fals
 afterEach(() => vi.unstubAllGlobals());
 
 describe("industrial workspace", () => {
+  it("submits registration through the website origin with session credentials", async () => {
+    const fetch = vi.fn(() => response(profile, 201));
+    vi.stubGlobal("fetch", fetch);
+    await post("/auth/register", { email: "test@example.com", password: "test-password-123" });
+    expect(fetch).toHaveBeenCalledWith("/api/v1/industrial/auth/register", expect.objectContaining({
+      method: "POST", credentials: "include",
+    }));
+  });
+
+  it("explains a network failure instead of showing the browser's generic error", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new TypeError("Failed to fetch"))));
+    await expect(industrialRequest("/auth/me")).rejects.toThrow("Cannot reach TelemetryX");
+  });
+
+  it("explains an unavailable proxy backend", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false, status: 502,
+      json: async () => { throw new Error("Not JSON"); },
+    })));
+    await expect(industrialRequest("/auth/me")).rejects.toThrow("backend is unavailable");
+  });
+
   it("shows account onboarding and keeps the synthetic research demo separate", async () => {
     vi.stubGlobal("fetch", vi.fn(() => response({ detail: "Sign in" }, 401)));
     render(<IndustrialWorkspace />);
