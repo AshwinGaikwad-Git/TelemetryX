@@ -188,3 +188,39 @@ class AuditEvent(Base):
     entity_id: Mapped[str] = mapped_column(sa.String(100))
     details: Mapped[dict[str, Any]] = mapped_column(sa.JSON, default=dict)
     created_at: Mapped[datetime] = created()
+
+
+class EquipmentModel(Base):
+    __tablename__ = "industrial_equipment_models"
+    __table_args__ = (
+        sa.UniqueConstraint("id", "company_id", "machine_id"),
+        sa.ForeignKeyConstraint(["machine_id", "company_id"], [Machine.id, Machine.company_id]),
+    )
+    id: Mapped[uuid.UUID] = identity()
+    company_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey(Company.id), index=True)
+    machine_id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, index=True)
+    artifact_uri: Mapped[str] = mapped_column(sa.Text)
+    checksum: Mapped[str] = mapped_column(sa.String(64))
+    feature_schema: Mapped[dict[str, Any]] = mapped_column(sa.JSON)
+    metrics: Mapped[dict[str, Any]] = mapped_column(sa.JSON)
+    created_at: Mapped[datetime] = created()
+
+
+class EquipmentPrediction(Base):
+    __tablename__ = "industrial_equipment_predictions"
+    __table_args__ = (
+        sa.ForeignKeyConstraint(
+            ["model_id", "company_id", "machine_id"],
+            [EquipmentModel.id, EquipmentModel.company_id, EquipmentModel.machine_id],
+        ),
+    )
+    id: Mapped[uuid.UUID] = identity()
+    company_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey(Company.id), index=True)
+    machine_id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, index=True)
+    model_id: Mapped[uuid.UUID] = mapped_column(sa.Uuid)
+    remaining_hours: Mapped[float] = mapped_column(sa.Float)
+    lower_hours: Mapped[float] = mapped_column(sa.Float)
+    upper_hours: Mapped[float] = mapped_column(sa.Float)
+    evidence: Mapped[dict[str, Any]] = mapped_column(sa.JSON)
+    observed_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[datetime] = created()

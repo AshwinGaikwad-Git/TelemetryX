@@ -69,7 +69,7 @@ describe("background workflow", () => {
     });
     vi.stubGlobal("fetch", fetch);
     render(<HomePage />);
-    fireEvent.click(screen.getByRole("button", { name: "Quick Demo Setup" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run sample demo" }));
     await waitFor(() => expect(screen.getByText(/Synthetic demo completed/)).toBeInTheDocument());
     expect(fetch.mock.calls.some(([url]) => url.includes("dataset_id=dataset-1&model_version_id=model-1"))).toBe(true);
     expect(screen.getByRole("status")).toHaveTextContent("succeeded");
@@ -79,7 +79,7 @@ describe("background workflow", () => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("API offline"))));
     render(<HomePage />);
     await waitFor(() => expect(screen.getByText(/Could not refresh dashboard: API offline/)).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /Dataset Explorer/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Data connections/ }));
     expect(screen.getByLabelText("C-MAPSS file")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload file" })).toBeDisabled();
   });

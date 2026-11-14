@@ -379,257 +379,31 @@ export default function TelemetryXDashboard() {
   }, [evaluations, selectedModelId, selectedDatasetId]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col md:flex-row antialiased selection:bg-slate-200">
-      
-      {/* MOBILE BACKDROP */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-xs md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* 1. LEFT SIDEBAR NAVIGATION */}
-      <aside
-        className={`fixed md:sticky top-0 z-50 h-screen w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 transition-transform duration-200 ease-in-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
-      >
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          {/* Header Brand */}
-          <div className="h-16 px-5 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-xs">
-                <Gauge className="w-4 h-4 text-sky-400" />
-              </div>
-              <div>
-                <h1 className="font-bold text-base text-slate-900 tracking-tight leading-tight">
-                  TelemetryX
-                </h1>
-                <span className="text-[10px] font-semibold text-slate-400 tracking-wide uppercase">
-                  C-MAPSS FD001 - synthetic demo available
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-600 md:hidden"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Quick Demo Action Trigger */}
-          <div className="p-3.5">
-            <button
-              onClick={runOneClickDemo}
-              disabled={isDemoRunning}
-              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-60"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-              <span>{isDemoRunning ? "Processing..." : "Quick Demo Setup"}</span>
-            </button>
-          </div>
-
-          {/* Main Navigation Group */}
-          <div className="px-3 space-y-4">
-            <div>
-              <div className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Mission Operations
-              </div>
-              <nav className="space-y-0.5">
-                {[
-                  { id: "overview", label: "Fleet Overview", icon: LayoutDashboard },
-                  { id: "engines", label: "Engine Inspector", icon: Gauge },
-                ].map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id as TabType);
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
-                        isActive
-                          ? "bg-slate-100 text-slate-900 font-semibold"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Icon
-                        className={`w-4 h-4 ${
-                          isActive ? "text-slate-900" : "text-slate-400"
-                        }`}
-                      />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-
-            <div>
-              <div className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Engineering & ML
-              </div>
-              <nav className="space-y-0.5">
-                {[
-                  { id: "datasets", label: "Dataset Explorer", icon: Database },
-                  { id: "models", label: "Model Registry", icon: BarChart3 },
-                ].map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id as TabType);
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
-                        isActive
-                          ? "bg-slate-100 text-slate-900 font-semibold"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Icon
-                        className={`w-4 h-4 ${
-                          isActive ? "text-slate-900" : "text-slate-400"
-                        }`}
-                      />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-
-            {/* Quick Priority Action Units in Sidebar */}
-            {priorityUnits.length > 0 && (
-              <div>
-                <div className="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>Priority Units</span>
-                  <span className="text-[9px] font-mono text-rose-600 font-bold">Action Needed</span>
-                </div>
-                <div className="space-y-1">
-                  {priorityUnits.slice(0, 5).map((u) => {
-                    const isUrgent = u.risk_level === "urgent";
-                    const isAttention = u.risk_level === "attention";
-                    return (
-                      <button
-                        key={u.id}
-                        onClick={() => {
-                          setSelectedEngineId(u.id);
-                          setActiveTab("engines");
-                          setSidebarOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer text-left ${
-                          selectedEngineId === u.id
-                            ? "bg-slate-900 text-white font-semibold"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              isUrgent
-                                ? "bg-rose-500"
-                                : isAttention
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                            }`}
-                          />
-                          <span className="font-mono text-xs font-medium">Unit #{u.unit_number}</span>
-                        </div>
-                        <span
-                          className={`text-[11px] font-mono ${
-                            selectedEngineId === u.id ? "text-slate-300" : "text-slate-500"
-                          }`}
-                        >
-                          {u.predicted_rul !== null ? `${u.predicted_rul} cyc` : "—"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sidebar Footer Status */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/60">
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="font-medium text-slate-700">API Operational</span>
-            </div>
-            <span className="text-[11px] font-mono text-slate-400">v0.2.0</span>
-          </div>
-          <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-            <span>Turbofans</span>
-            <span className="font-mono text-slate-600 font-semibold">{engines.length || 100} units</span>
-          </div>
+    <div className="industrial-shell research-shell">
+      <aside className="ix-sidebar">
+        <a className="ix-brand" href="/demo"><span><Activity size={21} /></span>TelemetryX<small>RESEARCH DEMO</small></a>
+        <div className="ix-workspace-select"><Database size={16} /><label><span>BENCHMARK WORKSPACE</span><strong>NASA C-MAPSS</strong></label></div>
+        <div className="ix-nav-label">RESEARCH OPERATIONS</div>
+        <nav aria-label="Research navigation">{[
+          { id: "overview", label: "Fleet overview", icon: LayoutDashboard },
+          { id: "engines", label: "Engine inspector", icon: Gauge },
+          { id: "datasets", label: "Data connections", icon: Database },
+          { id: "models", label: "Models & evaluation", icon: Cpu },
+        ].map(item => <button key={item.id} aria-label={item.label} title={item.label} className={activeTab === item.id ? "active" : ""} onClick={() => setActiveTab(item.id as TabType)}><item.icon size={18} /><span>{item.label}</span></button>)}</nav>
+        <div className="ix-sidebar-bottom">
+          <div className="ix-pilot-label"><ShieldCheck size={15} /><span>Research environment<small>Synthetic sample available</small></span></div>
+          <a className="ix-demo-link" href="/">Industrial workspace <ArrowRight size={14} /></a>
+          <div className="ix-user"><span>CM</span><div><strong>C-MAPSS benchmark</strong><small>Turbofan remaining life</small></div></div>
         </div>
       </aside>
-
-      {/* 2. MAIN APPLICATION CONTENT AREA */}
-      <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* Top Header */}
-        <header className="h-16 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between gap-4 sticky top-0 z-30">
-          <div className="flex items-center gap-3 flex-1 max-w-xl">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 md:hidden"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            {/* Quick Search */}
-            <div className="relative w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={globalSearch}
-                onChange={(e) => setGlobalSearch(e.target.value)}
-                placeholder="Search engine units (e.g. Unit 49), risk levels, models..."
-                className="w-full pl-9 pr-4 py-1.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white rounded-lg text-xs text-slate-900 placeholder:text-slate-400 border border-slate-200 focus:border-slate-400 focus:outline-none transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* Right Header Indicators */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => refreshAll()}
-              disabled={isLoading}
-              title="Refresh telemetry"
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-slate-700" : ""}`} />
-            </button>
-
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
-              <Radio className="w-3 h-3 text-emerald-600" />
-              <span>FD001 Analysis</span>
-            </div>
-
-            <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center">
-                AG
-              </div>
-              <div className="hidden lg:block text-left">
-                <div className="text-xs font-semibold text-slate-900 leading-tight">
-                  Ashwin Gaikwad
-                </div>
-                <div className="text-[10px] text-slate-400">Reliability Engineering</div>
-              </div>
-            </div>
-          </div>
+      <div className="ix-main">
+        <header className="ix-topbar"><div className="ix-breadcrumb">Workspace <ChevronRight size={13} /><strong>NASA C-MAPSS</strong><ChevronRight size={13} /><span>{activeTab === "overview" ? "Fleet overview" : activeTab === "engines" ? "Engine inspector" : activeTab === "datasets" ? "Data connections" : "Models & evaluation"}</span></div>
+          <div className="ix-top-actions"><label className="research-search"><Search size={15} /><input aria-label="Search engine units or risk" placeholder="Search units or risk" value={globalSearch} onChange={event => { setGlobalSearch(event.target.value); if (event.target.value) setActiveTab("datasets"); }} /></label><button aria-label="Refresh research workspace" title="Refresh research workspace" onClick={() => void refreshAll()} disabled={isLoading}><RefreshCw size={17} className={isLoading ? "ix-spin" : ""} /></button></div>
         </header>
-
+        <div className="research-intro ix-content">
+          <div className="ix-page-head"><div><span className="ix-eyebrow">NASA C-MAPSS / PREDICTIVE MAINTENANCE</span><h1>{activeTab === "overview" ? "Your fleet. Its remaining life." : activeTab === "engines" ? "Every engine. In context." : activeTab === "datasets" ? "From telemetry to evidence." : "Models you can inspect."}</h1><p>{activeTab === "overview" ? "Explore engine condition, remaining useful life and the units that need attention." : activeTab === "engines" ? "Inspect sensor histories, predictions and the evidence behind each estimate." : activeTab === "datasets" ? "Import C-MAPSS files, prepare a dataset and run your training workflow." : "Compare trained models, run predictions and review evaluation results."}</p></div><button className="ix-button ix-button-primary" disabled={isDemoRunning} onClick={runOneClickDemo}><Sparkles size={16} />{isDemoRunning ? "Processing..." : "Run sample demo"}</button></div>
+          <div className="ix-freshness"><Database size={12} />Research benchmark / sample setup uses synthetic C-MAPSS-shaped FD001 fixtures<span>{engines.length} engine runs loaded</span></div>
+        </div>
         {/* Global Feedback Banner */}
         {activeJob && <div role="status" className="mx-6 my-3 p-3 rounded border bg-white text-sm">
         Job {activeJob.id}: {activeJob.status} - attempt {activeJob.attempt_count}
@@ -663,7 +437,7 @@ export default function TelemetryXDashboard() {
         )}
 
         {/* MAIN BODY CONTAINER */}
-        <main className="p-4 sm:p-8 max-w-7xl w-full mx-auto space-y-8 flex-1">
+        <main className="ix-content research-content space-y-6">
           
           {/* ========================================================= */}
           {/* TAB 1: FLEET OVERVIEW                                     */}
@@ -675,7 +449,7 @@ export default function TelemetryXDashboard() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                    Fleet Reliability & RUL Cockpit
+                    Fleet reliability overview
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 mt-1">
                     Remaining Useful Life estimates for imported engine telemetry. The demo uses synthetic fixtures.
@@ -685,7 +459,7 @@ export default function TelemetryXDashboard() {
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Leak-Free Pipeline Active
+                    Dataset-scoped analysis
                   </span>
                 </div>
               </div>
@@ -700,7 +474,7 @@ export default function TelemetryXDashboard() {
                   <div className="text-3xl font-extrabold text-slate-900 font-mono">
                     {fleetSummary?.fleet_size ?? engines.length}
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-1">100% operational monitoring</div>
+                  <div className="text-[11px] text-slate-500 mt-1">Engine runs in the selected dataset</div>
                 </div>
 
                 <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs">
@@ -709,7 +483,7 @@ export default function TelemetryXDashboard() {
                     <Clock className="w-4 h-4 text-slate-400" />
                   </div>
                   <div className="text-3xl font-extrabold text-slate-900 font-mono">
-                    {fleetSummary?.mean_predicted_rul ? `${fleetSummary.mean_predicted_rul} cyc` : "108.4 cyc"}
+                    {fleetSummary?.mean_predicted_rul != null ? `${fleetSummary.mean_predicted_rul} cyc` : "?"}
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1">Projected engine lifespan</div>
                 </div>
@@ -733,7 +507,7 @@ export default function TelemetryXDashboard() {
                   <div className="text-3xl font-extrabold text-rose-600 font-mono">
                     {fleetSummary?.critical_engines?.length ?? 0}
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-1">Immediate teardown review</div>
+                  <div className="text-[11px] text-slate-500 mt-1">Review illustrative risk classification</div>
                 </div>
               </div>
 
@@ -1495,7 +1269,7 @@ export default function TelemetryXDashboard() {
                           <Line
                             type="monotone"
                             dataKey="value"
-                            stroke="#0284c7"
+                            stroke="#0c756b"
                             strokeWidth={2}
                             dot={false}
                             activeDot={{ r: 4, fill: "#0284c7" }}
@@ -1873,7 +1647,7 @@ export default function TelemetryXDashboard() {
                           }}
                         />
                         <ReferenceLine x={0} y={0} stroke="#cbd5e1" strokeDasharray="3 3" />
-                        <Scatter name="Test Units" data={evaluationScatterData} fill="#0284c7" />
+                        <Scatter name="Test Units" data={evaluationScatterData} fill="#0c756b" />
                       </ScatterChart>
                     </ResponsiveContainer>
                   </div>

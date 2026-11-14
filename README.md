@@ -129,3 +129,41 @@ corepack pnpm build
 Backend tests use temporary databases/storage and never ingest into your development database or overwrite your model files. Regression coverage includes holdout-only preprocessing, immutable byte-preserving imports, artifact compatibility, jobs/retries, migration preservation, interval metrics and dataset/model scoping. Frontend tests cover jobs, multipart imports, demo orchestration and error presentation.
 
 SSO/MFA, email verification and account recovery, protocol gateways, equipment-specific predictive models, CI/Playwright automation and production deployment hardening remain future work. See [architecture](docs/architecture.md), [data dictionary](docs/data-dictionary.md) and [data provenance](docs/cmapss-provenance.md).
+
+## Equipment-specific remaining-life models
+
+In **Machinery**, select equipment and open **Remaining life. With evidence.**
+An admin or engineer can download a training CSV template and upload labeled history.
+The CSV uses `run_id,remaining_hours,<registered_sensor_key>,...` with 100–10,000
+snapshots from at least five independent failure runs, up to 30 sensors and 2 MB.
+One run identifies a single asset life between repairs. Use known remaining-time
+labels in hours and the registered sensor units; ordinary unlabeled telemetry
+cannot train an RUL model. Train only on representative equipment and operating
+conditions. No NASA or generated sample data is automatically assigned to equipment.
+
+Training creates an immutable machine/company-specific version. The 80/20 split
+holds out entire runs. The page reports validation MAE, RMSE, median-baseline MAE
+and observed coverage of the nominal 90% quantile interval. Models remain experimental;
+this split alone does not establish suitability for maintenance decisions.
+Training is synchronous and bounded by the upload limits.
+
+An admin, manager or engineer can request an estimate from fresh, aligned readings.
+Inference requires every training sensor with its original unit, readings no more
+than three sampling intervals old, alignment within the smallest sampling interval,
+and values within the training partition's observed ranges. Missing or incompatible
+inputs block inference. Viewer and technician roles can inspect results.
+
+Each estimate retains its model version, source checksum, input values/timestamps,
+validation metrics and sensitivity evidence. Sensitivity replaces one sensor value
+with its training median; it is not causal attribution. The inspector plots the
+latest 50 estimates and shows whether the latest model's estimate matches current
+sensor readings. The fleet table labels the last estimate with its observation time.
+Threshold health and alerts continue to describe observed limits independently;
+RUL estimates do not automatically open alerts or maintenance orders.
+
+API (under `/api/v1/industrial/companies/{company_id}/machines/{machine_id}`):
+- `GET /predictive`: model, readiness and prediction history.
+- `POST /predictive/train`: multipart `file` containing labeled CSV.
+- `POST /predictive/predict`: estimate from current registered sensor readings.
+
+Run `alembic upgrade head` before starting the updated backend.

@@ -20,6 +20,7 @@ from app.api.routes.predictions import router as predictions_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, request_id_context
 from app.industrial.auth import router as industrial_auth_router
+from app.industrial.predictive import router as equipment_predictive_router
 from app.industrial.routes import router as industrial_router
 
 settings = get_settings()
@@ -93,3 +94,5 @@ app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(jobs_router, prefix="/api/v1")
 app.include_router(industrial_auth_router, prefix="/api/v1")
 app.include_router(industrial_router, prefix="/api/v1")
+
+app.include_router(equipment_predictive_router, prefix="/api/v1")

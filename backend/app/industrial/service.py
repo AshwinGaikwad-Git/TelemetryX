@@ -8,7 +8,7 @@ from sqlalchemy import inspect, select
 from sqlalchemy.orm import Session
 
 from app.industrial.auth import audit
-from app.industrial.models import Alert, Machine, Reading, Sensor
+from app.industrial.models import Alert, EquipmentPrediction, Machine, Reading, Sensor
 from app.industrial.schemas import TelemetryPoint, utc
 
 
@@ -113,13 +113,29 @@ def machine_snapshot(db: Session, machine: Machine, now: datetime | None = None)
     else:
         health = "within_limits"
     last_seen = max((utc(p["latest"]["timestamp"]) for p in points if p["latest"]), default=None)
+    prediction = db.scalar(
+        select(EquipmentPrediction)
+        .where(
+            EquipmentPrediction.company_id == machine.company_id,
+            EquipmentPrediction.machine_id == machine.id,
+        )
+        .order_by(EquipmentPrediction.created_at.desc(), EquipmentPrediction.id.desc())
+        .limit(1)
+    )
     return {
         **record(machine),
         "health": health,
         "connectivity": connectivity,
         "last_seen": last_seen,
         "sensors": points,
-        "monitoring": "Threshold monitoring; equipment-specific predictive models not enabled",
+        "monitoring": "Threshold monitoring; experimental RUL is reported separately",
+        "last_prediction": {
+            "remaining_hours": prediction.remaining_hours,
+            "observed_at": utc(prediction.observed_at),
+            "model_id": str(prediction.model_id),
+        }
+        if prediction
+        else None,
     }
 
 

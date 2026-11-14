@@ -48,3 +48,23 @@
 
 .ix-top-actions .ix-mobile-company { display:none; }
 @media(max-width:850px) { .ix-top-actions .ix-mobile-company { display:flex; }.ix-mobile-company select { max-width:130px; } }
+/* Research benchmark uses the industrial workspace design tokens. */
+.research-shell .ix-workspace-select strong { display:block; font-size:12px; font-weight:500; color:#eff6f5; margin-top:7px; }
+.research-intro { padding-bottom:0; }.research-intro .ix-freshness { margin-bottom:0; }.research-content { padding-top:24px; }
+.research-search input { width:165px; border:0; outline:none; color:#405962; font-size:11px; }
+.research-shell .research-content .bg-white { border-color:var(--ix-line); box-shadow:0 2px 3px #1a414404; }
+.research-shell .research-content .rounded-xl { border-radius:10px; }
+.research-shell .research-content .text-slate-900 { color:var(--ix-ink); }
+.research-shell .research-content .font-bold,.research-shell .research-content .font-extrabold { font-weight:600; }
+.research-shell .research-content .text-3xl { font-size:38px; font-weight:500; letter-spacing:-1.5px; font-family:Arial,Helvetica,sans-serif; margin:18px 0 12px; }
+.research-shell .research-content .bg-slate-900 { background:var(--ix-teal); }
+.research-shell .research-content .text-sky-600,.research-shell .research-content .text-sky-700 { color:var(--ix-teal); }
+.research-shell .research-content .bg-sky-50 { background:#f0f7f3; }
+.research-shell .research-content .border-sky-200 { border-color:#cee3d8; }
+.research-shell .research-content h3 { font-size:17px; font-weight:600; letter-spacing:-.4px; }
+.research-shell .research-content table th { font-size:9px; letter-spacing:.7px; font-weight:500; }
+.research-shell .research-content table td { padding-top:17px; padding-bottom:17px; font-size:11px; }
+.research-shell footer { background:transparent; border-color:var(--ix-line); color:#82949b; font-size:10px; line-height:1.8; }
+@media(max-width:850px) { .research-search input { width:125px; }.research-intro .ix-page-head { align-items:flex-start; }.research-intro .ix-page-head>.ix-button { font-size:11px; }.research-intro .ix-freshness { line-height:1.7; }.research-shell .ix-sidebar .ix-brand>small { display:none; } }
+@media(max-width:550px) { .research-intro .ix-page-head { flex-direction:column; gap:18px; }.research-search { max-width:150px; }.research-content { padding-top:20px; } }
+.ix-checksum { display:inline-block; max-width:100%; overflow-wrap:anywhere; font-family:monospace; font-size:10px; }

@@ -11,6 +11,7 @@ export interface Sensor {
 export interface Machine {
   id: string; site_id: string; asset_tag: string; name: string; equipment_type: string;
   manufacturer: string; model: string; area: string; criticality: string; operating_state: string;
+  last_prediction?: { remaining_hours: number; observed_at: string; model_id: string } | null;
   health: string; connectivity: string; last_seen: string | null; notes: string; sensors: Sensor[];
 }
 export interface Summary {

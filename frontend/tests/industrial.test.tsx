@@ -28,6 +28,7 @@ function mockWorkspace({ populated = false, role = "admin" as Role, alert = fals
     if (options?.method === "POST" && path.endsWith("/imports")) return response({ accepted: 1, duplicates: 0, rejected: 0, errors: [], checksum_sha256: "source-checksum" });
     if (options?.method === "POST") return response({ id: "created-1" }, 201);
     if (path.includes("company-2")) return response(path.endsWith("/summary") ? summary : []);
+    if (path.endsWith("/predictive")) return response({ model: null, ready: false, reason: "Train an equipment-specific model from labeled failure history first.", history: [] });
     if (path.endsWith("/summary")) return response({ ...summary, machine_count: populated ? 1 : 0, unknown: populated ? 1 : 0 });
     if (path.endsWith("/sites")) return response(populated ? [{ id: "site-1", name: "Pune plant", location: "Pune", timezone: "Asia/Kolkata" }] : []);
     if (path.endsWith("/machines")) return response(populated ? [machine] : []);
@@ -91,7 +92,7 @@ describe("industrial workspace", () => {
   it("does not invent healthy status or predictive results for missing signals", async () => {
     mockWorkspace({ populated: true }); render(<IndustrialWorkspace />);
     fireEvent.click(await screen.findByRole("button", { name: /Cooling pump/ }));
-    expect(await screen.findByText(/Predictive failure and RUL models are not enabled/)).toBeInTheDocument();
+    expect(await screen.findByText(/Equipment-specific RUL models are configured below/)).toBeInTheDocument();
     expect(screen.getByText("No readings for this signal. Upload a CSV or connect your gateway.")).toBeInTheDocument();
     expect(screen.getByText("missing")).toBeInTheDocument();
   });

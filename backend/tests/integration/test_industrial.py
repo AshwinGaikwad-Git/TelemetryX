@@ -396,3 +396,80 @@ def test_access_revocation_and_last_administrator_guard() -> None:
     reopened = owner.get(f"{base}/work-orders").json()[0]
     assert reopened["id"] == order["id"]
     assert reopened["status"] == "open" and reopened["assigned_to"] is None
+
+
+def training_csv() -> bytes:
+    rows = ["run_id,remaining_hours,temperature"]
+    for run in range(5):
+        for index in range(30):
+            rows.append(f"run-{run},{100 - index * 3},{40 + index + run * 0.1}")
+    return ("\n".join(rows) + "\n").encode()
+
+
+def test_equipment_model_training_predictions_and_company_isolation():
+    client, _, base = registered()
+    machine, _ = asset(client, base)
+    path = f"{base}/machines/{machine['id']}/predictive"
+    assert client.get(path).json()["model"] is None
+    assert client.post(f"{path}/predict").status_code == 409
+    response = client.post(f"{path}/train", files={"file": ("history.csv", training_csv())})
+    assert response.status_code == 201, response.text
+    model = response.json()
+    assert "artifact_uri" not in model
+    assert model["metrics"]["training_runs"] == 4
+    assert model["metrics"]["validation_runs"] == 1
+    assert client.get(path).json()["ready"] is False
+    assert client.post(f"{base}/telemetry", json=points(machine, [55, 56, 57])).status_code == 200
+    assert client.get(path).json()["ready"] is True
+    response = client.post(f"{path}/predict")
+    assert response.status_code == 201, response.text
+    prediction = response.json()
+    assert (
+        0 <= prediction["lower_hours"] <= prediction["remaining_hours"] <= prediction["upper_hours"]
+    )
+    assert prediction["evidence"]["inputs"]["temperature"]["value"] == 57
+    assert prediction["model_id"] == model["id"]
+    history = client.get(path).json()["history"]
+    assert history[0]["id"] == prediction["id"]
+    other, _, other_base = registered("other-predict@example.com")
+    other_path = f"{other_base}/machines/{machine['id']}/predictive"
+    assert other.get(path).status_code == 404
+    assert other.get(other_path).status_code == 404
+    assert (
+        other.post(f"{other_path}/train", files={"file": ("x.csv", training_csv())}).status_code
+        == 404
+    )
+    assert other.post(f"{other_path}/predict").status_code == 404
+    viewer, _ = invited(client, base, "viewer")
+    assert viewer.get(path).status_code == 200
+    assert (
+        viewer.post(f"{path}/train", files={"file": ("x.csv", training_csv())}).status_code == 403
+    )
+    assert viewer.post(f"{path}/predict").status_code == 403
+
+
+def test_equipment_training_rejects_invalid_data_and_stale_or_outside_range_readings():
+    client, _, base = registered()
+    machine, _ = asset(client, base)
+    path = f"{base}/machines/{machine['id']}/predictive"
+    for content in [
+        b"invalid",
+        b"run_id,remaining_hours,temperature\na,1,2\n",
+        training_csv().replace(b"temperature", b"unregistered"),
+        training_csv().replace(b"100,40", b"nan,40"),
+    ]:
+        result = client.post(f"{path}/train", files={"file": ("history.csv", content)})
+        assert result.status_code == 422, result.text
+    assert (
+        client.post(f"{path}/train", files={"file": ("history.csv", training_csv())}).status_code
+        == 201
+    )
+    assert (
+        client.post(f"{base}/telemetry", json=points(machine, [55], offset=400)).status_code == 200
+    )
+    assert "Fresh readings" in client.get(path).json()["reason"]
+    assert client.post(f"{path}/predict").status_code == 409
+    assert client.post(f"{base}/telemetry", json=points(machine, [90])).status_code == 200
+    assert "outside" in client.get(path).json()["reason"]
+    assert client.post(f"{path}/predict").status_code == 409
+    assert client.get(path).json()["history"] == []
