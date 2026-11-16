@@ -1,16 +1,32 @@
+import re
 import uuid
 from datetime import datetime
 from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AwareDatetime, BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 Role = Literal["admin", "manager", "engineer", "technician", "viewer"]
 Priority = Literal["low", "medium", "high", "critical"]
 State = Literal["running", "idle", "stopped", "maintenance"]
 
 
-class Credentials(BaseModel):
+class InputModel(BaseModel):
+    @field_validator("*", mode="before")
+    @classmethod
+    def trim_text(cls, value: object, info: ValidationInfo) -> object:
+        # Password whitespace is significant; descriptive input is normalized before length checks.
+        return value.strip() if isinstance(value, str) and info.field_name != "password" else value
+
+
+class Credentials(InputModel):
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=12, max_length=128)
 
@@ -18,7 +34,16 @@ class Credentials(BaseModel):
     @classmethod
     def email_format(cls, value: str) -> str:
         value = value.strip().lower()
-        if "@" not in value or "." not in value.rsplit("@", 1)[1]:
+        if (
+            not re.fullmatch(
+                r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+                r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}",
+                value,
+            )
+            or value.split("@", 1)[0].startswith(".")
+            or value.split("@", 1)[0].endswith(".")
+            or ".." in value
+        ):
             raise ValueError("Enter a valid email address")
         return value
 
@@ -28,15 +53,15 @@ class Registration(Credentials):
     company_name: str = Field(min_length=1, max_length=120)
 
 
-class CompanyCreate(BaseModel):
+class CompanyCreate(InputModel):
     name: str = Field(min_length=1, max_length=120)
 
 
-class InvitationAccept(BaseModel):
+class InvitationAccept(InputModel):
     token: str = Field(min_length=20, max_length=100)
 
 
-class MemberCreate(BaseModel):
+class MemberCreate(InputModel):
     email: str = Field(min_length=3, max_length=254)
     role: Role
 
@@ -46,11 +71,11 @@ class MemberCreate(BaseModel):
         return Credentials.email_format(value)
 
 
-class RoleUpdate(BaseModel):
+class RoleUpdate(InputModel):
     role: Role
 
 
-class SiteCreate(BaseModel):
+class SiteCreate(InputModel):
     name: str = Field(min_length=1, max_length=120)
     location: str = Field(default="", max_length=200)
     timezone: str = "UTC"
@@ -65,7 +90,7 @@ class SiteCreate(BaseModel):
         return value
 
 
-class MachineCreate(BaseModel):
+class MachineCreate(InputModel):
     site_id: uuid.UUID
     asset_tag: str = Field(min_length=1, max_length=60, pattern=r"^[A-Za-z0-9_-]+$")
     name: str = Field(min_length=1, max_length=120)
@@ -78,11 +103,11 @@ class MachineCreate(BaseModel):
     notes: str = Field(default="", max_length=5000)
 
 
-class MachineUpdate(BaseModel):
+class MachineUpdate(InputModel):
     operating_state: State
 
 
-class SensorCreate(BaseModel):
+class SensorCreate(InputModel):
     key: str = Field(min_length=1, max_length=60, pattern=r"^[a-z][a-z0-9_]*$")
     name: str = Field(min_length=1, max_length=100)
     unit: str = Field(min_length=1, max_length=30)
@@ -107,7 +132,7 @@ class SensorCreate(BaseModel):
         return self
 
 
-class TelemetryPoint(BaseModel):
+class TelemetryPoint(InputModel):
     machine_id: uuid.UUID
     sensor_key: str = Field(max_length=60)
     timestamp: AwareDatetime
@@ -115,11 +140,11 @@ class TelemetryPoint(BaseModel):
     unit: str = Field(max_length=30)
 
 
-class TelemetryBatch(BaseModel):
+class TelemetryBatch(InputModel):
     readings: list[TelemetryPoint] = Field(min_length=1, max_length=10000)
 
 
-class WorkCreate(BaseModel):
+class WorkCreate(InputModel):
     machine_id: uuid.UUID
     alert_id: uuid.UUID | None = None
     title: str = Field(min_length=1, max_length=180)
@@ -129,7 +154,7 @@ class WorkCreate(BaseModel):
     due_at: AwareDatetime | None = None
 
 
-class WorkUpdate(BaseModel):
+class WorkUpdate(InputModel):
     status: Literal["open", "assigned", "in_progress", "completed", "verified", "cancelled"]
     assigned_to: uuid.UUID | None = None
     findings: str | None = Field(default=None, max_length=5000)

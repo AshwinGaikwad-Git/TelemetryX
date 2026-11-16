@@ -1,0 +1,32 @@
+[
+  {
+    "check": "ruff",
+    "returncode": 0,
+    "stdout": "All checks passed!\n",
+    "stderr": ""
+  },
+  {
+    "check": "format",
+    "returncode": 0,
+    "stdout": "61 files already formatted\n",
+    "stderr": ""
+  },
+  {
+    "check": "mypy",
+    "returncode": 0,
+    "stdout": "Success: no issues found in 47 source files\n",
+    "stderr": ""
+  },
+  {
+    "check": "typescript",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "check": "whitespace",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/alembic.ini', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/pyproject.toml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'backend/uv.lock', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'frontend/next.config.ts', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'frontend/package.json', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'frontend/pnpm-lock.yaml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'frontend/tsconfig.json', LF will be replaced by CRLF the next time Git touches it\n"
+  }
+]

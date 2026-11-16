@@ -1,14 +1,5 @@
 @import "tailwindcss";
 
-:root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-border: #e2e8f0;
-  --primary: #0284c7;
-  --accent: #2563eb;
-}
-
 body {
   background-color: #f8fafc;
   color: #0f172a;
@@ -18,33 +9,6 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Kaggle-inspired clean workspace background */
-.telemetry-bg {
-  background-color: #f8fafc;
-  min-height: 100vh;
-}
-
-/* Crisp professional card styling */
-.glass-card,
-.kaggle-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.875rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-}
-
-.glass-card-hover,
-.kaggle-card-hover {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-card-hover:hover,
-.kaggle-card-hover:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  transform: translateY(-1px);
 }
 
 /* Clean scrollbars */

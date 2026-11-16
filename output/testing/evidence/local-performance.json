@@ -1,0 +1,50 @@
+{
+  "environment": "in-process TestClient and temporary SQLite",
+  "ingestion": [
+    {
+      "readings": 1,
+      "milliseconds": 28.83
+    },
+    {
+      "readings": 10,
+      "milliseconds": 22.76
+    },
+    {
+      "readings": 100,
+      "milliseconds": 85.49
+    },
+    {
+      "readings": 500,
+      "milliseconds": 258.81
+    }
+  ],
+  "summary_reads": [
+    {
+      "iteration": 1,
+      "requests": 20,
+      "concurrency": 5,
+      "median_ms": 45.08,
+      "p95_ms": 54.46,
+      "requests_per_second": 105.87,
+      "errors": 0
+    },
+    {
+      "iteration": 2,
+      "requests": 20,
+      "concurrency": 5,
+      "median_ms": 45.5,
+      "p95_ms": 60.77,
+      "requests_per_second": 100.72,
+      "errors": 0
+    },
+    {
+      "iteration": 3,
+      "requests": 20,
+      "concurrency": 5,
+      "median_ms": 49.29,
+      "p95_ms": 65.41,
+      "requests_per_second": 96.14,
+      "errors": 0
+    }
+  ]
+}

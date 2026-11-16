@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -46,6 +47,13 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
     allow_headers=["Content-Type", "X-Request-ID", "Idempotency-Key", "X-Ingestion-Key"],
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error(request: Request, error: RequestValidationError) -> JSONResponse:
+    # Raw inputs may contain non-JSON floats or credentials. Return only safe diagnostic fields.
+    detail = [{key: item[key] for key in ("type", "loc", "msg")} for item in error.errors()]
+    return JSONResponse({"detail": detail}, status_code=422)
 
 
 @app.middleware("http")

@@ -1,0 +1,344 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\frontend\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--project=chromium-desktop"
+    ],
+    "configFile": "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\frontend\\playwright.config.ts",
+    "rootDir": "C:/Users/Ashwin/Desktop/TelemetryX/frontend/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/Ashwin/Desktop/TelemetryX/output/testing/evidence/browser-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-desktop",
+        "name": "chromium-desktop",
+        "testDir": "C:/Users/Ashwin/Desktop/TelemetryX/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/Ashwin/Desktop/TelemetryX/output/testing/evidence/browser-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox-desktop",
+        "name": "firefox-desktop",
+        "testDir": "C:/Users/Ashwin/Desktop/TelemetryX/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/Ashwin/Desktop/TelemetryX/output/testing/evidence/browser-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-mobile",
+        "name": "chromium-mobile",
+        "testDir": "C:/Users/Ashwin/Desktop/TelemetryX/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\output\\testing\\evidence\\browser-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "chromium-desktop",
+        "testDir": "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\frontend\\e2e",
+        "snapshotDir": "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\frontend\\e2e",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 60000,
+        "use": {
+          "baseURL": "http://127.0.0.1:3001",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/159.0.8154.6 Safari/537.36",
+          "viewport": {
+            "width": 1280,
+            "height": 720
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "chromium-desktop"
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../output/testing/evidence/browser-results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "../output/testing/evidence/browser-report",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.65.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "evaluation.spec.ts",
+      "file": "evaluation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "authentication layout accessibility and keyboard entry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1772,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-16T18:31:58.173Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "authentication-accessibility",
+                      "contentType": "application/json",
+                      "body": "W10="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "abe5193fc16f84d6a11e-521b78e7e4603091756d",
+          "file": "evaluation.spec.ts",
+          "line": 24,
+          "column": 1
+        },
+        {
+          "title": "invalid login shows an actionable error and remains usable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1346,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-16T18:32:00.182Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "abe5193fc16f84d6a11e-63a6e32222ee494f22bd",
+          "file": "evaluation.spec.ts",
+          "line": 38,
+          "column": 1
+        },
+        {
+          "title": "registration equipment sensor CSV alert maintenance and logout",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "timedOut",
+                  "duration": 60406,
+                  "error": {
+                    "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                    "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                  },
+                  "errors": [
+                    {
+                      "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                    },
+                    {
+                      "location": {
+                        "file": "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\frontend\\e2e\\evaluation.spec.ts",
+                        "column": 64,
+                        "line": 59
+                      },
+                      "message": "Error: locator.fill: Test timeout of 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Equipment category', { exact: true })\u001b[22m\n\n\n  57 |   await page.getByLabel(\"Asset tag\", { exact: true }).fill(\"EVAL-PUMP\");\n  58 |   await page.getByLabel(\"Machine name\", { exact: true }).fill(\"Evaluation pump\");\n> 59 |   await page.getByLabel(\"Equipment category\", { exact: true }).fill(\"Pump\");\n     |                                                                ^\n  60 |   await page.getByRole(\"button\", { name: \"Register machine\", exact: true }).click();\n  61 |   await expect(page.getByRole(\"status\")).toContainText(\"Machine registered\");\n  62 |   await page.getByLabel(\"Sensor key\", { exact: true }).fill(\"temperature\");\n    at C:\\Users\\Ashwin\\Desktop\\TelemetryX\\frontend\\e2e\\evaluation.spec.ts:59:64"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-16T18:32:01.535Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\output\\testing\\evidence\\browser-artifacts\\evaluation-registration-eq-6e64f-lert-maintenance-and-logout-chromium-desktop\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\output\\testing\\evidence\\browser-artifacts\\evaluation-registration-eq-6e64f-lert-maintenance-and-logout-chromium-desktop\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\Ashwin\\Desktop\\TelemetryX\\output\\testing\\evidence\\browser-artifacts\\evaluation-registration-eq-6e64f-lert-maintenance-and-logout-chromium-desktop\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "abe5193fc16f84d6a11e-140df579f6551d33e732",
+          "file": "evaluation.spec.ts",
+          "line": 48,
+          "column": 1
+        },
+        {
+          "title": "research demo renders without runtime errors and has accessible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2870,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-16T18:33:02.850Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "research-accessibility",
+                      "contentType": "application/json",
+                      "body": "W10="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "abe5193fc16f84d6a11e-44b17dcfb54a1317ae56",
+          "file": "evaluation.spec.ts",
+          "line": 92,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-11-16T18:31:42.998Z",
+    "duration": 84026.004,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

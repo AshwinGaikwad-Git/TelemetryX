@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="15" skipped="0" tests="18" time="35.782" timestamp="2026-11-16T23:52:53.662208+05:30" hostname="LAPTOP-J81H93LE"><testcase classname="tests.integration.test_evaluation" name="test_registration_rejects_blank_identity_fields[name]" time="0.529"><failure message="AssertionError: assert 201 == 422&#10; +  where 201 = &lt;Response [201 Created]&gt;.status_code&#10; +    where &lt;Response [201 Created]&gt; = post('/api/v1/industrial/auth/register', json={'company_name': 'Factory', 'email': 'owner@example.com', 'name': '   ', 'password': 'long-password-123'})&#10; +      where post = &lt;starlette.testclient.TestClient object at 0x0000023CCBDE5FA0&gt;.post">tests\integration\test_evaluation.py:18: in test_registration_rejects_blank_identity_fields
+    assert client.post("/api/v1/industrial/auth/register", json=payload).status_code == 422
+E   AssertionError: assert 201 == 422
+E    +  where 201 = &lt;Response [201 Created]&gt;.status_code
+E    +    where &lt;Response [201 Created]&gt; = post('/api/v1/industrial/auth/register', json={'company_name': 'Factory', 'email': 'owner@example.com', 'name': '   ', 'password': 'long-password-123'})
+E    +      where post = &lt;starlette.testclient.TestClient object at 0x0000023CCBDE5FA0&gt;.post</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_registration_rejects_blank_identity_fields[company_name]" time="0.421"><failure message="AssertionError: assert 201 == 422&#10; +  where 201 = &lt;Response [201 Created]&gt;.status_code&#10; +    where &lt;Response [201 Created]&gt; = post('/api/v1/industrial/auth/register', json={'company_name': '   ', 'email': 'owner@example.com', 'name': 'Owner', 'password': 'long-password-123'})&#10; +      where post = &lt;starlette.testclient.TestClient object at 0x0000023CCC01B200&gt;.post">tests\integration\test_evaluation.py:18: in test_registration_rejects_blank_identity_fields
+    assert client.post("/api/v1/industrial/auth/register", json=payload).status_code == 422
+E   AssertionError: assert 201 == 422
+E    +  where 201 = &lt;Response [201 Created]&gt;.status_code
+E    +    where &lt;Response [201 Created]&gt; = post('/api/v1/industrial/auth/register', json={'company_name': '   ', 'email': 'owner@example.com', 'name': 'Owner', 'password': 'long-password-123'})
+E    +      where post = &lt;starlette.testclient.TestClient object at 0x0000023CCC01B200&gt;.post</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_email_validation_rejects_malformed_addresses[a@@example.com]" time="0.187"><failure message="Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;">tests\integration\test_evaluation.py:27: in test_email_validation_rejects_malformed_addresses
+    with pytest.raises(ValidationError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_email_validation_rejects_malformed_addresses[a b@example.com]" time="0.215"><failure message="Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;">tests\integration\test_evaluation.py:27: in test_email_validation_rejects_malformed_addresses
+    with pytest.raises(ValidationError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_email_validation_rejects_malformed_addresses[@example.com]" time="0.213"><failure message="Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;">tests\integration\test_evaluation.py:27: in test_email_validation_rejects_malformed_addresses
+    with pytest.raises(ValidationError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_email_validation_rejects_malformed_addresses[a@example..com]" time="0.218"><failure message="Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;">tests\integration\test_evaluation.py:27: in test_email_validation_rejects_malformed_addresses
+    with pytest.raises(ValidationError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_email_validation_rejects_malformed_addresses[a@example.com ]" time="0.188" /><testcase classname="tests.integration.test_evaluation" name="test_required_descriptions_cannot_be_whitespace[SiteCreate-payload0]" time="0.172"><failure message="Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;">tests\integration\test_evaluation.py:38: in test_required_descriptions_cannot_be_whitespace
+    with pytest.raises(ValidationError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_required_descriptions_cannot_be_whitespace[SensorCreate-payload1]" time="0.180"><failure message="Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;">tests\integration\test_evaluation.py:38: in test_required_descriptions_cannot_be_whitespace
+    with pytest.raises(ValidationError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_required_descriptions_cannot_be_whitespace[SensorCreate-payload2]" time="0.478"><failure message="Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;">tests\integration\test_evaluation.py:38: in test_required_descriptions_cannot_be_whitespace
+    with pytest.raises(ValidationError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_required_descriptions_cannot_be_whitespace[WorkCreate-payload3]" time="0.598"><failure message="Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;">tests\integration\test_evaluation.py:38: in test_required_descriptions_cannot_be_whitespace
+    with pytest.raises(ValidationError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE &lt;class 'pydantic_core._pydantic_core.ValidationError'&gt;</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_normalization_does_not_change_password" time="0.647"><failure message="AssertionError: assert ' Owner ' == 'Owner'&#10;  &#10;  - Owner&#10;  +  Owner &#10;  ? +     +">tests\integration\test_evaluation.py:44: in test_normalization_does_not_change_password
+    assert value.name == "Owner"
+E   AssertionError: assert ' Owner ' == 'Owner'
+E     
+E     - Owner
+E     +  Owner 
+E     ? +     +</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_nonfinite_request_values_return_validation_error_not_server_error[NaN]" time="0.776"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 422&#10; +  where 500 = &lt;Response [500 Internal Server Error]&gt;.status_code">tests\integration\test_evaluation.py:54: in test_nonfinite_request_values_return_validation_error_not_server_error
+    assert response.status_code == 422, response.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 422
+E    +  where 500 = &lt;Response [500 Internal Server Error]&gt;.status_code</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_nonfinite_request_values_return_validation_error_not_server_error[Infinity]" time="0.686"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 422&#10; +  where 500 = &lt;Response [500 Internal Server Error]&gt;.status_code">tests\integration\test_evaluation.py:54: in test_nonfinite_request_values_return_validation_error_not_server_error
+    assert response.status_code == 422, response.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 422
+E    +  where 500 = &lt;Response [500 Internal Server Error]&gt;.status_code</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_nonfinite_request_values_return_validation_error_not_server_error[-Infinity]" time="0.671"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 422&#10; +  where 500 = &lt;Response [500 Internal Server Error]&gt;.status_code">tests\integration\test_evaluation.py:54: in test_nonfinite_request_values_return_validation_error_not_server_error
+    assert response.status_code == 422, response.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 422
+E    +  where 500 = &lt;Response [500 Internal Server Error]&gt;.status_code</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_nonfinite_request_values_return_validation_error_not_server_error[1e309]" time="0.517"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 422&#10; +  where 500 = &lt;Response [500 Internal Server Error]&gt;.status_code">tests\integration\test_evaluation.py:54: in test_nonfinite_request_values_return_validation_error_not_server_error
+    assert response.status_code == 422, response.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 422
+E    +  where 500 = &lt;Response [500 Internal Server Error]&gt;.status_code</failure></testcase><testcase classname="tests.integration.test_evaluation" name="test_unknown_account_login_does_not_disclose_registration" time="0.843" /><testcase classname="tests.integration.test_evaluation" name="test_login_rate_limit_is_enforced" time="27.219" /></testsuite></testsuites>

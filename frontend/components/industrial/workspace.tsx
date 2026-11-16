@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, ArrowRight, Bell, Building2, ChevronRight, Database, Factory, LayoutDashboard, LogOut, Plus, RefreshCw, Search, Settings2, ShieldCheck, Users, Wrench } from "lucide-react";
+import { Activity, ArrowRight, Bell, Building2, ChevronRight, Database, Factory, LayoutDashboard, LogOut, Plus, RefreshCw, Search, ShieldCheck, Users, Wrench } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Alert, ApiError, Audit, ImportReport, industrialRequest, IngestionKey, Machine, patch, post, Profile, Site, Summary, TeamMember, WorkOrder } from "../../lib/industrial-api";
 import AuthScreen from "./auth-screen";

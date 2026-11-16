@@ -6,7 +6,7 @@ TelemetryX now has an industrial pilot workspace at `/`: company accounts, sites
 
 Start the API and frontend with the commands below, open http://localhost:3000, and create your first account. There are no preset passwords and no machinery readings are inserted into your company automatically. A password must contain at least 12 characters. See [industrial pilot guide](docs/industrial-pilot.md) for access roles, telemetry contracts, endpoints and current deployment limits.
 
-**Prediction scope:** the industrial workspace currently uses transparent threshold monitoring. Equipment-specific anomaly, failure and RUL models require real labelled operating histories and are not enabled. The `/demo` uses synthetic C-MAPSS-shaped fixtures, not official NASA benchmark data; its models do not score industrial machines.
+**Prediction scope:** the industrial workspace currently uses transparent threshold monitoring. Experimental equipment-specific RUL models can be trained from labelled operating histories through the machinery inspector; anomaly and failure-probability models are not enabled. The `/demo` uses synthetic C-MAPSS-shaped fixtures, not official NASA benchmark data; its models do not score industrial machines.
 
 ## Stack and workflow
 
@@ -128,7 +128,7 @@ corepack pnpm build
 
 Backend tests use temporary databases/storage and never ingest into your development database or overwrite your model files. Regression coverage includes holdout-only preprocessing, immutable byte-preserving imports, artifact compatibility, jobs/retries, migration preservation, interval metrics and dataset/model scoping. Frontend tests cover jobs, multipart imports, demo orchestration and error presentation.
 
-SSO/MFA, email verification and account recovery, protocol gateways, equipment-specific predictive models, CI/Playwright automation and production deployment hardening remain future work. See [architecture](docs/architecture.md), [data dictionary](docs/data-dictionary.md) and [data provenance](docs/cmapss-provenance.md).
+SSO/MFA, email verification and account recovery, protocol gateways, equipment-specific anomaly/failure-probability models, hosted CI automation and production deployment hardening remain future work. See [architecture](docs/architecture.md), [data dictionary](docs/data-dictionary.md) and [data provenance](docs/cmapss-provenance.md).
 
 ## Equipment-specific remaining-life models
 
@@ -167,3 +167,9 @@ API (under `/api/v1/industrial/companies/{company_id}/machines/{machine_id}`):
 - `POST /predictive/predict`: estimate from current registered sensor readings.
 
 Run `alembic upgrade head` before starting the updated backend.
+
+## Testing evaluation report
+
+The evaluation report is in `docs/testing-evaluation-report.md` and `output/pdf/TelemetryX_Software_Testing_and_Evaluation_Report.pdf`. Recorded results are under `output/testing/evidence`. Browser tests use disposable storage and a separate production build on ports 3001/8001.
+
+Use Node.js 22.12 or newer for the test tooling. From `frontend`, install browser binaries with `corepack pnpm exec playwright install chromium firefox`, then run `corepack pnpm test:e2e --repeat-each=2`. The current server launch paths target Windows. These tests do not use your development database.

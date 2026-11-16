@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="29" failures="0" errors="0" time="2.1270499">
+    <testsuite name="tests/access.test.tsx" timestamp="2026-11-16T19:13:36.126Z" hostname="LAPTOP-J81H93LE" tests="8" failures="0" errors="0" skipped="0" time="0.5357636">
+        <testcase classname="tests/access.test.tsx" name="team access and integration controls &gt; hides invitation key and role-management controls from viewers" time="0.0871332">
+        </testcase>
+        <testcase classname="tests/access.test.tsx" name="team access and integration controls &gt; creates a private invitation and dismisses its one-time display" time="0.1157608">
+        </testcase>
+        <testcase classname="tests/access.test.tsx" name="team access and integration controls &gt; allows engineers to generate and revoke company-scoped ingestion credentials" time="0.0530386">
+        </testcase>
+        <testcase classname="tests/access.test.tsx" name="team access and integration controls &gt; refreshes the profile after accepting an invitation" time="0.078861">
+        </testcase>
+        <testcase classname="tests/access.test.tsx" name="team access and integration controls &gt; creates a separate company and refreshes membership" time="0.0932249">
+        </testcase>
+        <testcase classname="tests/access.test.tsx" name="team access and integration controls &gt; submits role changes and access removal for another member" time="0.0301323">
+        </testcase>
+        <testcase classname="tests/access.test.tsx" name="authentication form recovery &gt; preserves password whitespace and trims descriptive registration fields" time="0.031168">
+        </testcase>
+        <testcase classname="tests/access.test.tsx" name="authentication form recovery &gt; recovers the sign-in button after a rejected login" time="0.0443722">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/home.test.tsx" timestamp="2026-11-16T19:13:36.131Z" hostname="LAPTOP-J81H93LE" tests="4" failures="0" errors="0" skipped="0" time="0.3373002">
+        <testcase classname="tests/home.test.tsx" name="HomePage Dashboard &gt; renders the primary brand header and NASA badge" time="0.139124">
+        </testcase>
+        <testcase classname="tests/home.test.tsx" name="HomePage Dashboard &gt; renders all four navigation tabs" time="0.0663182">
+        </testcase>
+        <testcase classname="tests/home.test.tsx" name="HomePage Dashboard &gt; renders fleet risk distribution section on initial overview tab" time="0.0457822">
+        </testcase>
+        <testcase classname="tests/home.test.tsx" name="HomePage Dashboard &gt; allows switching between navigation tabs" time="0.0841691">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/industrial.test.tsx" timestamp="2026-11-16T19:13:36.132Z" hostname="LAPTOP-J81H93LE" tests="9" failures="0" errors="0" skipped="0" time="0.7338168">
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; submits registration through the website origin with session credentials" time="0.0035639">
+        </testcase>
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; explains a network failure instead of showing the browser&apos;s generic error" time="0.0020482">
+        </testcase>
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; explains an unavailable proxy backend" time="0.0004485">
+        </testcase>
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; shows account onboarding and keeps the synthetic research demo separate" time="0.1181482">
+        </testcase>
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; starts a company empty and presents a clear registration workflow" time="0.1436629">
+        </testcase>
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; resets the view when switching companies and obeys the selected company&apos;s role" time="0.1268793">
+        </testcase>
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; does not invent healthy status or predictive results for missing signals" time="0.1018804">
+        </testcase>
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; imports timestamped CSV with session credentials and shows row-level results" time="0.1161295">
+        </testcase>
+        <testcase classname="tests/industrial.test.tsx" name="industrial workspace &gt; turns an equipment alert into a linked work order" time="0.1192576">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/predictive.test.tsx" timestamp="2026-11-16T19:13:36.134Z" hostname="LAPTOP-J81H93LE" tests="3" failures="0" errors="0" skipped="0" time="0.2134968">
+        <testcase classname="tests/predictive.test.tsx" name="equipment predictions &gt; shows missing model readiness and uploads labeled history to the selected machine" time="0.1323587">
+        </testcase>
+        <testcase classname="tests/predictive.test.tsx" name="equipment predictions &gt; blocks estimates for stale inputs and respects viewer permissions" time="0.0457535">
+        </testcase>
+        <testcase classname="tests/predictive.test.tsx" name="equipment predictions &gt; runs compatible inference and displays held-out metrics" time="0.0336276">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/workflow.test.tsx" timestamp="2026-11-16T19:13:36.135Z" hostname="LAPTOP-J81H93LE" tests="5" failures="0" errors="0" skipped="0" time="0.3066725">
+        <testcase classname="tests/workflow.test.tsx" name="background workflow &gt; polls queued jobs until their result is available" time="0.0068959">
+        </testcase>
+        <testcase classname="tests/workflow.test.tsx" name="background workflow &gt; surfaces validation details instead of treating failed imports as successful" time="0.0015737">
+        </testcase>
+        <testcase classname="tests/workflow.test.tsx" name="background workflow &gt; lets the browser set the multipart boundary for custom file imports" time="0.0018931">
+        </testcase>
+        <testcase classname="tests/workflow.test.tsx" name="background workflow &gt; completes the demo through job results and scopes its refresh to the resulting model" time="0.1831144">
+        </testcase>
+        <testcase classname="tests/workflow.test.tsx" name="background workflow &gt; shows failed refreshes and exposes a custom-file upload form" time="0.1110197">
+        </testcase>
+    </testsuite>
+</testsuites>

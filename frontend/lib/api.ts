@@ -221,7 +221,6 @@ export const api = {
     request<EngineCycleData[]>(
       `/engines/${engineRunId}/cycles?start_cycle=${start || 1}${end ? `&end_cycle=${end}` : ""}`
     ),
-  getExperiments: () => request<any[]>("/experiments"),
   runExperiment: (payload: {
     dataset_version_id: string;
     name?: string;
@@ -240,13 +239,5 @@ export const api = {
       `/models/${modelId}/predictions?dataset_id=${datasetId}&role=${role}`,
       { method: "POST" }
     ),
-  getPredictions: (modelId?: string, riskLevel?: string) => {
-    const params = new URLSearchParams();
-    if (modelId) params.append("model_version_id", modelId);
-    if (riskLevel) params.append("risk_level", riskLevel);
-    const qs = params.toString();
-    return request<any[]>(`/predictions${qs ? `?${qs}` : ""}`);
-  },
-  getPrediction: (id: string) => request<any>(`/predictions/${id}`),
   getEvaluations: () => request<EvaluationRun[]>("/evaluations"),
 };

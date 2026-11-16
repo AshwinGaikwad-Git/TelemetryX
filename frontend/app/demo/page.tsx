@@ -15,26 +15,18 @@ import {
   Clock,
   Cpu,
   Database,
-  ExternalLink,
-  Flame,
   Gauge,
   HelpCircle,
-  Layers,
   LayoutDashboard,
-  Menu,
-  Play,
-  Radio,
   RefreshCw,
   Search,
   ShieldAlert,
   ShieldCheck,
-  Sliders,
   Sparkles,
   TrendingDown,
   TrendingUp,
   Wrench,
   X,
-  Zap,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -84,7 +76,6 @@ export default function TelemetryXDashboard() {
   const detailRequest = useRef(0);
   const refreshRequest = useRef(0);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
 
   // Core Data States

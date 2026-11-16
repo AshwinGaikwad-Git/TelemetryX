@@ -1,0 +1,7 @@
+*.pdf binary
+*.zip binary
+*.png binary
+*.woff2 binary
+
+# Preserve recorded evaluation evidence byte for byte.
+output/testing/evidence/** -text

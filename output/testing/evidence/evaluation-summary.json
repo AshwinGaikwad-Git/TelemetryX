@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-17",
+  "base_commit": "89d919a",
+  "branch": "feature/industrial-foundation",
+  "working_tree_modified": true,
+  "backend_iterations": [
+    {
+      "tests": 64,
+      "failures": 0
+    },
+    {
+      "tests": 64,
+      "failures": 0
+    },
+    {
+      "tests": 64,
+      "failures": 0
+    }
+  ],
+  "frontend_iterations": [
+    {
+      "tests": 29,
+      "failures": 0
+    },
+    {
+      "tests": 29,
+      "failures": 0
+    },
+    {
+      "tests": 29,
+      "failures": 0
+    }
+  ],
+  "browser": {
+    "startTime": "2026-11-16T19:17:48.115Z",
+    "duration": 127102.203,
+    "expected": 30,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "backend_coverage": {
+    "covered_lines": 2439,
+    "num_statements": 2678,
+    "percent_covered": 87.89571694599627,
+    "percent_covered_display": "88",
+    "missing_lines": 239,
+    "excluded_lines": 0,
+    "percent_statements_covered": 91.07542942494399,
+    "percent_statements_covered_display": "91",
+    "num_branches": 544,
+    "num_partial_branches": 117,
+    "covered_branches": 393,
+    "missing_branches": 151,
+    "percent_branches_covered": 72.24264705882354,
+    "percent_branches_covered_display": "72"
+  },
+  "frontend_coverage": {
+    "lines": {
+      "total": 532,
+      "covered": 341,
+      "skipped": 0,
+      "pct": 64.09
+    },
+    "statements": {
+      "total": 774,
+      "covered": 473,
+      "skipped": 0,
+      "pct": 61.11
+    },
+    "functions": {
+      "total": 277,
+      "covered": 141,
+      "skipped": 0,
+      "pct": 50.9
+    },
+    "branches": {
+      "total": 778,
+      "covered": 403,
+      "skipped": 0,
+      "pct": 51.79
+    },
+    "branchesTrue": {
+      "total": 0,
+      "covered": 0,
+      "skipped": 0,
+      "pct": 100
+    }
+  },
+  "frontend_audit_findings": 0,
+  "backend_audit_findings": 0,
+  "python": "3.12.14",
+  "node": "v26.13.0"
+}

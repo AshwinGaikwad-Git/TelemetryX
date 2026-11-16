@@ -4,10 +4,12 @@
 backend/.venv
 frontend/node_modules
 frontend/.next
+frontend/.next-evaluation
+tmp
+output
 data/raw
 data/processed
 models
-saved_models
 __pycache__
 .pytest_cache
 .mypy_cache

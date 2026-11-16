@@ -1,0 +1,22 @@
+{
+  "pdf_pages": 8,
+  "visually_reviewed_pages": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "layout_review": "No clipping, overlapping text, broken table rows or missing glyphs observed",
+  "source_hashes_verified": 104,
+  "quality_checks_passed": [
+    "ruff",
+    "format",
+    "mypy",
+    "typescript",
+    "whitespace"
+  ]
+}

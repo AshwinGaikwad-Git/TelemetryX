@@ -17,6 +17,7 @@ htmlcov/
 # Node / Next.js
 node_modules/
 .next/
+.next-evaluation/
 out/
 *.tsbuildinfo
 
@@ -27,13 +28,12 @@ data/processed/*
 !data/processed/.gitkeep
 models/*
 !models/.gitkeep
-saved_models/*
-!saved_models/.gitkeep
 
 # Editors and OS files
 .vscode/
 .idea/
 *.log
+/tmp/
 # SQLite dev databases
 *.db
 *.sqlite

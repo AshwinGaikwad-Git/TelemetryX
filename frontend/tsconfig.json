@@ -29,10 +29,12 @@
     "esModuleInterop": true
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    "**/*.mts",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    ".next-evaluation/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
