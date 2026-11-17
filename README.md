@@ -8,6 +8,40 @@ Start the API and frontend with the commands below, open http://localhost:3000, 
 
 **Prediction scope:** the industrial workspace currently uses transparent threshold monitoring. Experimental equipment-specific RUL models can be trained from labelled operating histories through the machinery inspector; anomaly and failure-probability models are not enabled. The `/demo` uses synthetic C-MAPSS-shaped fixtures, not official NASA benchmark data; its models do not score industrial machines.
 
+## Architecture flow
+
+```mermaid
+flowchart LR
+    subgraph Clients
+        UI[Next.js workspace and research cockpit]
+        HTTP[HTTP telemetry clients]
+        CSV[CSV imports]
+    end
+    subgraph API[FastAPI modular monolith]
+        AUTH[Identity, companies and roles]
+        INGEST[Validation, deduplication and ingestion]
+        MONITOR[Snapshots, alerts and maintenance]
+        RESEARCH[Dataset, experiment and prediction APIs]
+    end
+    DB[(SQLite local / PostgreSQL deployed)]
+    FILES[(Raw, processed and model artifacts)]
+    JOBS[Local executor / Dramatiq worker]
+    REDIS[(Redis, optional job broker)]
+    UI -->|JSON API| API
+    HTTP --> INGEST
+    CSV --> INGEST
+    AUTH --> DB
+    INGEST --> DB
+    INGEST --> FILES
+    INGEST --> MONITOR
+    MONITOR --> DB
+    RESEARCH --> DB
+    RESEARCH --> FILES
+    RESEARCH --> JOBS
+    JOBS --> DB
+    JOBS -. optional broker .-> REDIS
+```
+
 ## Stack and workflow
 
 - Python 3.12, FastAPI, SQLAlchemy/Alembic, pandas, scikit-learn HistGradientBoosting, SHAP.
