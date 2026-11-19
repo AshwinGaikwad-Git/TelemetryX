@@ -18,8 +18,15 @@ htmlcov/
 node_modules/
 .next/
 .next-evaluation/
+.next-research-*/
 out/
 *.tsbuildinfo
+
+# Generated test output (keep the archived coverage summary)
+/output/testing/evidence/frontend-coverage/*
+!/output/testing/evidence/frontend-coverage/coverage-summary.json
+/output/testing/evidence/browser-artifacts/
+/output/testing/evidence/screenshot-verification/
 
 # Local data and model artifacts
 data/raw/*

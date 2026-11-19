@@ -5,6 +5,7 @@ backend/.venv
 frontend/node_modules
 frontend/.next
 frontend/.next-evaluation
+frontend/.next-research-*
 tmp
 output
 data/raw
